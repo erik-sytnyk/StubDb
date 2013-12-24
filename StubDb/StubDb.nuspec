@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
     <metadata>
         <id>StubDb</id>
-        <version>0.1.0-CI00002</version>
+        <version>$version$</version>
         <title>StubDb</title>
         <authors>Yegor Sytnyk</authors>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
