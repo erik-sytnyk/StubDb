@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+    <metadata>
+        <id>StubDb</id>
+        <version>0.1.0-CI00002</version>
+        <title>StubDb</title>
+        <authors>Yegor Sytnyk</authors>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>StubDb makes it simple to create stub data access layer for fast prototyping or easy unit testing.</description>
+        <copyright />
+        <dependencies>
+            <dependency id="Ext.Core" version="0.2.0-CI00005" />
+        </dependencies>
+    </metadata>
+</package>
