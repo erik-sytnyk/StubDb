@@ -15,7 +15,7 @@ namespace StubDb
         void Add(TEntity entity);
         void Update(TEntity entity);
         void Remove(TEntity entity);
-        void Remove(object id);
+        void Remove(int id);
         IQueryable<TEntity> Query();
     }
 
@@ -48,14 +48,9 @@ namespace StubDb
             Context.Remove<TEntity>(entity);
         }
 
-        public void Remove(object id)
+        public void Remove(int id)
         {
-            throw new NotImplementedException();
-            /*
-            var entity = new TEntity();
-            //TODO set entity id here
-            Context.Remove<TEntity>(entity);
-             */
+            Context.Remove(typeof(TEntity), id);
         }
 
         public IQueryable<TEntity> Query()

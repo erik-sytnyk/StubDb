@@ -35,6 +35,9 @@
     <Reference Include="Ext.Core">
       <HintPath>..\packages\Ext.Core.0.2.0-CI00005\lib\net45\Ext.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.5.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,8 +47,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EntityTypeCache.cs" />
+    <Compile Include="EntityTypeManager.cs" />
+    <Compile Include="IContextStoragePersistenceProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SerializeToFilePersistenceProvider.cs" />
     <Compile Include="StubContext.cs" />
     <Compile Include="StubSet.cs" />
   </ItemGroup>

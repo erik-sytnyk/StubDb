@@ -72,38 +72,59 @@ namespace StabDbTests
         [TestMethod]
         public void should_keep_data_in_sync()
         {
-            var context = new TestStubContext();
-
-            var math = new Course() {Name = "Math"};
-            context.Courses.Add(math);
-
-            var geography = new Course() {Name = "Geography"};
-            context.Courses.Add(geography);
-
-            var literature = new Course() {Name = "Literature"};
-            context.Courses.Add(literature);
-
-            var alex = new Instructor() {FirstName = "Alex", Surname = "Bezborodov"};
-            
-            alex.Courses = new List<Course>();
-            alex.Courses.Add(math);
-            alex.Courses.Add(geography);
-
-            context.Instructors.Add(alex);
-            
-            var per = new Instructor() {FirstName = "Per", Surname = "Sudin"};
-            context.Instructors.Add(per);
-            
-            var yegor = new Instructor() {FirstName = "Yegor", Surname = "Sytnyk"};
-            context.Instructors.Add(yegor);
+            var context = this.InitializeTestContext();
 
             var mathFromContext = context.Courses.Query().FirstOrDefault(x => x.Name == "Math");
             Assert.IsNotNull(mathFromContext.Instructor);
 
-            context.Instructors.Remove(alex);
+            var alexInstructor = context.Instructors.Query().SingleOrDefault(x => x.FirstName == "Alex" && x.Surname == "Bezborodov");
+            
+            context.Instructors.Remove(alexInstructor);
 
             mathFromContext = context.Courses.Query().FirstOrDefault(x => x.Name == "Math");
             Assert.IsNull(mathFromContext.Instructor);
+        }
+
+        [TestMethod]
+        public void should_save_and_load_context()
+        {
+            var context = InitializeTestContext();
+
+            context.SaveData();
+
+            context.LoadData();
+
+            Assert.AreEqual(context.Instructors.Query().Count(), 3);
+        }
+
+        private TestStubContext InitializeTestContext()
+        {
+            var result = new TestStubContext();
+
+            var math = new Course() { Name = "Math" };
+            result.Courses.Add(math);
+
+            var geography = new Course() { Name = "Geography" };
+            result.Courses.Add(geography);
+
+            var literature = new Course() { Name = "Literature" };
+            result.Courses.Add(literature);
+
+            var alex = new Instructor() { FirstName = "Alex", Surname = "Bezborodov" };
+
+            alex.Courses = new List<Course>();
+            alex.Courses.Add(math);
+            alex.Courses.Add(geography);
+
+            result.Instructors.Add(alex);
+
+            var per = new Instructor() { FirstName = "Per", Surname = "Sudin" };
+            result.Instructors.Add(per);
+
+            var yegor = new Instructor() { FirstName = "Yegor", Surname = "Sytnyk" };
+            result.Instructors.Add(yegor);
+
+            return result;
         }
     }
 }

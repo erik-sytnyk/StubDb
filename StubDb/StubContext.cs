@@ -8,12 +8,30 @@ using Ext.Core;
 using Ext.Core.Collections;
 
 namespace StubDb
-{
+{    
     public class StubContext
     {
         #region Nested Classes
 
         //TODO add lock
+        public class ContextStorage
+        {
+            private EntityCollection _entities = new EntityCollection();          
+            private ConnectionsCollection _connections = new ConnectionsCollection();
+
+            public EntityCollection Entities
+            {
+                get { return _entities; }
+                set { _entities = value; }
+            }
+
+            public ConnectionsCollection Connections
+            {
+                get { return _connections; }
+                set { _connections = value; }
+            }
+        }
+
         public class EntityCollection
         {
             Dictionary<string, Dictionary<int, object>> _storage = new Dictionary<string, Dictionary<int, object>>();
@@ -65,7 +83,19 @@ namespace StubDb
             {
                 var type = typeof(T);
 
-                return _storage[type.FullName];
+                return GetEntities(type);
+            }
+
+            public Dictionary<int, object> GetEntities(Type entityType)
+            {
+                var result = new Dictionary<int, object>();
+                
+                if (_storage.ContainsKey(entityType.FullName))
+                {
+                    result = _storage[entityType.FullName];
+                }
+                
+                return result;
             }
         }
 
@@ -191,13 +221,14 @@ namespace StubDb
 
         #endregion
 
-        protected EntityCollection Entities = new EntityCollection();
+        protected ContextStorage Storage = new ContextStorage();
         protected Dictionary<string, Type> Types = new Dictionary<string, Type>();
-        protected ConnectionsCollection Connections = new ConnectionsCollection();
+
+        public IContextStoragePersistenceProvider PersistenceProvider { get; set; }
 
         public StubContext()
         {
-            var stubSets = EntityTypesCache.GetProperties(this.GetType()).Where(x => IsStubSet(x.PropertyType)).ToList();
+            var stubSets = EntityTypeManager.GetProperties(this.GetType()).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
 
             foreach (var propertyInfo in stubSets)
             {
@@ -211,6 +242,8 @@ namespace StubDb
             {
                 this.RegisterType(type);
             }
+
+            PersistenceProvider = new SerializeToFilePersistenceProvider();
         }
 
         //TODO performance
@@ -218,7 +251,7 @@ namespace StubDb
         {
             var result = (StubSet<TEntity>)null;
 
-            var property = EntityTypesCache.GetProperties(this.GetType()).SingleOrDefault(x => IsStubSet(x.PropertyType) && GetCollectionType(x.PropertyType) == typeof(TEntity));
+            var property = EntityTypeManager.GetProperties(this.GetType()).SingleOrDefault(x => EntityTypeManager.IsStubSet(x.PropertyType) && EntityTypeManager.GetCollectionType(x.PropertyType) == typeof(TEntity));
 
             if (property != null)
             {
@@ -243,27 +276,27 @@ namespace StubDb
         {
             this.CheckIsEntityType(typeof(T));
 
-            var properties = EntityTypesCache.GetProperties(typeof(T));
+            var properties = EntityTypeManager.GetProperties(typeof(T));
 
             var entityId = GetEntityId(entity);
 
-            var existingEntity = this.Entities.GetById<T>(entityId);
+            var existingEntity = this.Storage.Entities.GetById<T>(entityId);
             var isExistingEntity = existingEntity != null;
 
             if (!isExistingEntity)
             {
-                var newId = Entities.GetAvailableIdForEntityType(entity);
+                var newId = this.Storage.Entities.GetAvailableIdForEntityType(entity);
                 
                 SetEntityId(entity, newId);
 
-                this.Entities.Add(newId, entity);
+                this.Storage.Entities.Add(newId, entity);
             }
 
             foreach (var propertyInfo in properties)
             {
                 var entitiesToAdd = new List<object>();
 
-                if (IsCollection(propertyInfo.PropertyType))
+                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
                 {                    
                     var collection = propertyInfo.GetValue(entity) as IEnumerable;
 
@@ -292,11 +325,11 @@ namespace StubDb
                 {
                     var connectedType = entitiesToAdd.First().GetType();
 
-                    Connections.RemoveConnectionsFor(typeof(T), entityId, connectedType);
+                    this.Storage.Connections.RemoveConnectionsFor(typeof(T), entityId, connectedType);
 
                     foreach (var entityToAdd in entitiesToAdd)
                     {
-                        Connections.AddConnection(entity.GetType(), entityToAdd.GetType(), GetEntityId(entity), GetEntityId(entityToAdd));
+                        this.Storage.Connections.AddConnection(entity.GetType(), entityToAdd.GetType(), GetEntityId(entity), GetEntityId(entityToAdd));
                     }
                 }
             }
@@ -305,15 +338,20 @@ namespace StubDb
         public void Remove<T>(T entity)
         {
             var entityId = this.GetEntityId(entity);
-            Connections.RemoveConnectionsFor(entity.GetType(), entityId);
-            Entities.Remove(entityId, entity);
+            this.Remove(typeof(T), entityId);
+        }
+
+        internal void Remove(Type entityType, int id)
+        {
+            this.Storage.Connections.RemoveConnectionsFor(entityType, id);
+            this.Storage.Entities.Remove(id, entityType);
         }
 
         public IQueryable<T> Query<T>()
         {
             var list = new List<T>();
 
-            var entities = Entities.GetEntities<T>();
+            var entities = this.Storage.Entities.GetEntities<T>();
 
             foreach (var entity in entities.Values)
             {
@@ -321,12 +359,12 @@ namespace StubDb
 
                 var entityId = this.GetEntityId(entity);
 
-                foreach (var propertyInfo in EntityTypesCache.GetProperties(typeof(T)))
+                foreach (var propertyInfo in EntityTypeManager.GetProperties(typeof(T)))
                 {
-                    if (IsCollection(propertyInfo.PropertyType))
+                    if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
                     {
-                        var connectedEntityType = GetCollectionType(propertyInfo.PropertyType);
-                        var connections = Connections.GetConnectionsFor(typeof(T), entityId, connectedEntityType);
+                        var connectedEntityType = EntityTypeManager.GetCollectionType(propertyInfo.PropertyType);
+                        var connections = this.Storage.Connections.GetConnectionsFor(typeof(T), entityId, connectedEntityType);
 
                         if (connections.Count > 0)
                         {
@@ -349,16 +387,16 @@ namespace StubDb
                             {
                                 var connectedId = entityConnection.GetIdByType(connectedEntityType);
 
-                                var entityToAdd = Entities.GetById(connectedId, connectedEntityType);
+                                var entityToAdd = this.Storage.Entities.GetById(connectedId, connectedEntityType);
 
                                 connectedList.Add(entityToAdd);
                             }
                         }
                     }
-                    else if (!IsSimpleType(propertyInfo.PropertyType))
+                    else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
                     {
                         var connectedEntityType = propertyInfo.PropertyType;
-                        var connections = Connections.GetConnectionsFor(typeof(T), entityId, connectedEntityType);
+                        var connections = this.Storage.Connections.GetConnectionsFor(typeof(T), entityId, connectedEntityType);
 
                         Check.That(connections.Count <= 1, "Multiple connections for one to one relation");
 
@@ -368,7 +406,7 @@ namespace StubDb
 
                             var connectedId = entityConnection.GetIdByType(connectedEntityType);
 
-                            var connectedEntity = Entities.GetById(connectedId, connectedEntityType);
+                            var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedEntityType);
 
                             propertyInfo.SetValue(entity, connectedEntity);
                         }
@@ -384,29 +422,24 @@ namespace StubDb
         }
 
         public void SaveData()
-        {            
-            //later
-            //persist entities
-            //persist connections
+        {
+            PersistenceProvider.SaveContext(Storage, Types);
         }
 
         public void LoadData()
         {
-            //later
-            //upload entites
-            //upload connections
-            //referesh data
+            this.Storage = PersistenceProvider.LoadContext(Types);
         }
 
         public static List<Type> GetEntityTypes(Type containerType)
         {
             var result = new Dictionary<string, Type>();
 
-            var enumerableProperties = EntityTypesCache.GetProperties(containerType).Where(x => IsStubSet(x.PropertyType));
+            var enumerableProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType));
 
             foreach (var enumerableProperty in enumerableProperties)
             {
-                var typeOfCollection = GetCollectionType(enumerableProperty.PropertyType);
+                var typeOfCollection = EntityTypeManager.GetCollectionType(enumerableProperty.PropertyType);
                 result.AddIfNoEntry(typeOfCollection.FullName, typeOfCollection);
                 AddEntityTypes(typeOfCollection, result);
             }
@@ -430,7 +463,7 @@ namespace StubDb
         {
             var type = entity.GetType();
 
-            var idProp = EntityTypesCache.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
+            var idProp = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
 
             Check.That(idProp != null, "Entity type does not have id property");
 
@@ -457,22 +490,22 @@ namespace StubDb
         private void SetEntityId<T>(T entity, int id)
         {
             var type = entity.GetType();
-            var idProp = EntityTypesCache.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
+            var idProp = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
             idProp.SetValue(entity, id);
         }
 
         private static void AddEntityTypes(Type type, Dictionary<string, Type> typesDict)
         {
-            var properties = EntityTypesCache.GetProperties(type);
+            var properties = EntityTypeManager.GetProperties(type);
             foreach (var propertyInfo in properties)
             {
                 var entityType = (Type)null;
 
-                if (IsCollection(propertyInfo.PropertyType))
+                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
                 {
-                    entityType = GetCollectionType(propertyInfo.PropertyType);
+                    entityType = EntityTypeManager.GetCollectionType(propertyInfo.PropertyType);
                 }
-                else if (!IsSimpleType(propertyInfo.PropertyType))
+                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
                 {
                     entityType = propertyInfo.PropertyType;
                 }
@@ -483,33 +516,6 @@ namespace StubDb
                     AddEntityTypes(entityType, typesDict);
                 }
             }
-        }
-
-        public static bool IsSimpleType(Type type)
-        {
-            if (type.IsValueType || type == typeof(string))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool IsStubSet(Type type)
-        {
-            var result = type.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IStubSet<>));
-            return result;
-        }
-
-        public static bool IsCollection(Type type)
-        {
-            var result = type.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>));
-            return result;
-        }
-
-        public static Type GetCollectionType(Type type)
-        {
-            return type.GetGenericArguments().Single();
         }
 
         #endregion
