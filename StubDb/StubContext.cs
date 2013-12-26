@@ -8,7 +8,7 @@ using Ext.Core;
 using Ext.Core.Collections;
 
 namespace StubDb
-{    
+{
     public class StubContext
     {
         #region Nested Classes
@@ -16,7 +16,7 @@ namespace StubDb
         //TODO add lock
         public class ContextStorage
         {
-            private EntityCollection _entities = new EntityCollection();          
+            private EntityCollection _entities = new EntityCollection();
             private ConnectionsCollection _connections = new ConnectionsCollection();
 
             public EntityCollection Entities
@@ -30,15 +30,21 @@ namespace StubDb
                 get { return _connections; }
                 set { _connections = value; }
             }
+
+            public void Clear()
+            {
+                _entities.Clear();
+                _connections.Clear();
+            }
         }
 
         public class EntityCollection
         {
             Dictionary<string, Dictionary<int, object>> _storage = new Dictionary<string, Dictionary<int, object>>();
 
-            public void Add<T>(int id, T entity)
+            public void Add(int id, object entity)
             {
-                var type = typeof(T);
+                var type = entity.GetType();
 
                 _storage.AddIfNoEntry(type.FullName, new Dictionary<int, object>());
 
@@ -89,13 +95,18 @@ namespace StubDb
             public Dictionary<int, object> GetEntities(Type entityType)
             {
                 var result = new Dictionary<int, object>();
-                
+
                 if (_storage.ContainsKey(entityType.FullName))
                 {
                     result = _storage[entityType.FullName];
                 }
-                
+
                 return result;
+            }
+
+            public void Clear()
+            {
+                _storage.Clear();
             }
         }
 
@@ -150,6 +161,16 @@ namespace StubDb
                 }
 
                 return result;
+            }
+
+            public IEnumerable<EntityConnection> GetAllConnections()
+            {
+                return _storage;
+            }
+
+            public void Clear()
+            {
+                _storage.Clear();
             }
         }
 
@@ -286,7 +307,7 @@ namespace StubDb
             if (!isExistingEntity)
             {
                 var newId = this.Storage.Entities.GetAvailableIdForEntityType(entity);
-                
+
                 SetEntityId(entity, newId);
 
                 this.Storage.Entities.Add(newId, entity);
@@ -297,12 +318,12 @@ namespace StubDb
                 var entitiesToAdd = new List<object>();
 
                 if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
-                {                    
+                {
                     var collection = propertyInfo.GetValue(entity) as IEnumerable;
 
                     if (collection == null)
                     {
-                        collection = (IEnumerable) Activator.CreateInstance(propertyInfo.PropertyType);
+                        collection = (IEnumerable)Activator.CreateInstance(propertyInfo.PropertyType);
                         propertyInfo.SetValue(entity, collection);
                     }
 
@@ -372,7 +393,7 @@ namespace StubDb
 
                             if (connectedList == null)
                             {
-                                connectedList = Activator.CreateInstance(propertyInfo.GetType()) as IList;
+                                connectedList = Activator.CreateInstance(propertyInfo.PropertyType) as IList;
 
                                 Check.NotNull(connectedList, "Collections in entity should implement IList"); //TODO support ICollection
 
@@ -380,7 +401,7 @@ namespace StubDb
                             }
                             else
                             {
-                                connectedList.Clear();   
+                                connectedList.Clear();
                             }
 
                             foreach (var entityConnection in connections)
@@ -428,7 +449,7 @@ namespace StubDb
 
         public void LoadData()
         {
-            this.Storage = PersistenceProvider.LoadContext(Types);
+            PersistenceProvider.LoadContext(this.Storage, Types);
         }
 
         public static List<Type> GetEntityTypes(Type containerType)
