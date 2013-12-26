@@ -467,6 +467,11 @@ namespace StubDb
             PersistenceProvider.LoadContext(this.Storage, Types);
         }
 
+        public bool IsEmpty
+        {
+            get { return this.Storage.IsEmpty; }
+        }
+
         public static List<Type> GetEntityTypes(Type containerType)
         {
             var result = new Dictionary<string, Type>();

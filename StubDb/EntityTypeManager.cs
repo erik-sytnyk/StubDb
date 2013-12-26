@@ -30,9 +30,9 @@ namespace StubDb
             return PropertiesCache[type];
         }
 
-        public static IEnumerable<PropertyInfo> GetSimpleProperties(Type type)
+        public static IEnumerable<PropertyInfo> GetSimpleWritableProperties(Type type)
         {
-            return GetProperties(type).Where(p => IsSimpleType(p.PropertyType));
+            return GetProperties(type).Where(p => IsSimpleType(p.PropertyType) && p.SetMethod != null);
         }
 
         public static bool IsSimpleType(Type type)

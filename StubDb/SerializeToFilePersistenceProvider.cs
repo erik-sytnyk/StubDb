@@ -101,10 +101,23 @@ namespace StubDb
                 }
             }
 
-            public void GetContextStorage(StubContext.ContextStorage storage, List<Type> types)
+            public void LoadContextStorage(StubContext.ContextStorage storage, List<Type> types)
             {
                 storage.Clear();
 
+                try
+                {
+                    TryLoadContextStorage(storage, types);
+                }
+                catch (Exception)
+                {
+                    storage.Clear();
+                    throw;
+                }
+            }
+
+            private void TryLoadContextStorage(StubContext.ContextStorage storage, List<Type> types)
+            {
                 foreach (var entityContainer in this.Entities)
                 {
                     var type = types.FirstOrDefault(x => x.FullName == entityContainer.TypeName);
@@ -128,7 +141,7 @@ namespace StubDb
 
                         foreach (var valuesString in entityContainer.ValuesList)
                         {
-                            var values = valuesString.Split(new string[] { SeparatorString }, StringSplitOptions.RemoveEmptyEntries);
+                            var values = valuesString.Split(new string[] { SeparatorString }, StringSplitOptions.None);
 
                             var entity = Activator.CreateInstance(type);
 
@@ -165,11 +178,16 @@ namespace StubDb
                         }
                     }
                 }
+
             }
 
-            //TODO support all simple types, probably move to Ext.Core
             private object ConvertToSimpleType(Type type, string value)
             {
+                if (type.IsEnum)
+                {
+                    return Enum.Parse(type, value);                    
+                }
+
                 return Convert.ChangeType(value, type);
             }
 
@@ -180,7 +198,7 @@ namespace StubDb
 
             private IEnumerable<PropertyInfo> GetSimpleProperties(Type entityType)
             {
-                return EntityTypeManager.GetSimpleProperties(entityType).OrderBy(x => x.Name);
+                return EntityTypeManager.GetSimpleWritableProperties(entityType).OrderBy(x => x.Name);
             }
 
             private string GetPropertiesString(IEnumerable<PropertyInfo> properties)
@@ -232,7 +250,7 @@ namespace StubDb
 
         public void LoadContext(StubContext.ContextStorage storage, Dictionary<string, Type> types)
         {
-            if (File.Exists(DbFilePath)) return;
+            if (!File.Exists(DbFilePath)) return;
 
             var tries = 0;
             
@@ -247,7 +265,7 @@ namespace StubDb
                     {
                         string json = reader.ReadToEnd();
                         var dataContainer = JsonConvert.DeserializeObject<DataContainer>(json);
-                        dataContainer.GetContextStorage(storage, types.Values.ToList());
+                        dataContainer.LoadContextStorage(storage, types.Values.ToList());
                     }
                     successfulExecution = true;
                 }
