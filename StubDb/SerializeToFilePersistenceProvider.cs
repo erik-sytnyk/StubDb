@@ -3,14 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
+using Ext.Core;
 using Newtonsoft.Json;
 
 namespace StubDb
 {
     public class SerializeToFilePersistenceProvider : IContextStoragePersistenceProvider
     {
-        public const string TemFilePath = @"C:\Temp\StubDb";
+        private const string DefaultDbFileName = @"StubDb.data";
+        private const int NumberOfTries = 60;
+        private const int TimeIntervalBetweenTries = 1000;
+
+        private string DbFilePath { get; set; }
+
+        public SerializeToFilePersistenceProvider()
+            : this(DefaultDbFileName)
+        {
+        }
+
+        public SerializeToFilePersistenceProvider(string dbFilePath)
+        {
+            DbFilePath = dbFilePath;
+        }
 
         #region Nested Classes
 
@@ -96,14 +112,14 @@ namespace StubDb
                     if (type != null)
                     {
                         var simpleProperties = GetSimpleProperties(type).ToList();
-                        var retrievedPropertyNames = entityContainer.Properties.Split(new string[] {SeparatorString}, StringSplitOptions.RemoveEmptyEntries);
+                        var retrievedPropertyNames = entityContainer.Properties.Split(new string[] { SeparatorString }, StringSplitOptions.RemoveEmptyEntries);
 
                         var map = new Dictionary<int, PropertyInfo>();
 
                         foreach (var retreivedPropertyName in retrievedPropertyNames)
                         {
                             var typeProperty = simpleProperties.FirstOrDefault(x => x.Name == retreivedPropertyName);
-                            
+
                             if (typeProperty != null)
                             {
                                 map.Add(retrievedPropertyNames.ToList().IndexOf(retreivedPropertyName), typeProperty);
@@ -125,7 +141,7 @@ namespace StubDb
 
                                 if (mapping.Value.Name.ToLower() == "id") //TODO
                                 {
-                                    entityId = (int) value;
+                                    entityId = (int)value;
                                 }
                             }
 
@@ -141,10 +157,10 @@ namespace StubDb
 
                     if (firstType != null && secondType != null)
                     {
-                        var connections = connectionContainer.ConnectionsString.Split(new string[] {SeparatorString}, StringSplitOptions.RemoveEmptyEntries);
+                        var connections = connectionContainer.ConnectionsString.Split(new string[] { SeparatorString }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var connection in connections)
                         {
-                            var ids = connection.Split(new string[] {SeparatorConnectionString}, StringSplitOptions.RemoveEmptyEntries);
+                            var ids = connection.Split(new string[] { SeparatorConnectionString }, StringSplitOptions.RemoveEmptyEntries);
                             storage.Connections.AddConnection(firstType, secondType, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]));
                         }
                     }
@@ -154,7 +170,7 @@ namespace StubDb
             //TODO support all simple types, probably move to Ext.Core
             private object ConvertToSimpleType(Type type, string value)
             {
-                return  Convert.ChangeType(value, type);
+                return Convert.ChangeType(value, type);
             }
 
             private string GetValuesString(object entity, IEnumerable<PropertyInfo> properties)
@@ -201,22 +217,58 @@ namespace StubDb
 
             string json = JsonConvert.SerializeObject(data);
 
-            using (var writer = new StreamWriter(TemFilePath, false))
+            try
             {
-                writer.WriteLine(json);
+                using (var writer = new StreamWriter(DefaultDbFileName, false))
+                {
+                    writer.WriteLine(json);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(String.Format("Error saving context to file {0}", DbFilePath), ex);
             }
         }
 
         public void LoadContext(StubContext.ContextStorage storage, Dictionary<string, Type> types)
         {
-            var result = (StubContext.ContextStorage)null;
+            if (File.Exists(DbFilePath)) return;
 
-            using (var reader = new StreamReader(TemFilePath, true))
+            var tries = 0;
+            
+            bool successfulExecution = false;
+            
+            while (!successfulExecution)
             {
-                string json = reader.ReadToEnd();
-                var dataContainer = JsonConvert.DeserializeObject<DataContainer>(json);
-                dataContainer.GetContextStorage(storage, types.Values.ToList());
+                tries++;
+                try
+                {
+                    using (var reader = new StreamReader(DbFilePath, true))
+                    {
+                        string json = reader.ReadToEnd();
+                        var dataContainer = JsonConvert.DeserializeObject<DataContainer>(json);
+                        dataContainer.GetContextStorage(storage, types.Values.ToList());
+                    }
+                    successfulExecution = true;
+                }
+                catch (Exception ex)
+                {
+                    if (IsFileLocked(ex))
+                    {
+                        Check.That(tries <= NumberOfTries, "Stub database file is locked. Maximum number of access tries was exceeded.");
+                    }
+                    else
+                    {
+                        throw new Exception(String.Format("Error saving context to file {0}", DbFilePath), ex);   
+                    }
+                }
             }
+        }
+
+        private static bool IsFileLocked(Exception exception)
+        {
+            var errorCode = Marshal.GetHRForException(exception) & ((1 << 16) - 1);
+            return errorCode == 32 || errorCode == 33;
         }
     }
 }

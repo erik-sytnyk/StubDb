@@ -31,6 +31,11 @@ namespace StubDb
                 set { _connections = value; }
             }
 
+            public bool IsEmpty
+            {
+                get { return _entities.IsEmpty && _connections.IsEmpty; }
+            }
+
             public void Clear()
             {
                 _entities.Clear();
@@ -104,6 +109,11 @@ namespace StubDb
                 return result;
             }
 
+            public bool IsEmpty
+            {
+                get { return _storage.Count == 0; }
+            }
+
             public void Clear()
             {
                 _storage.Clear();
@@ -166,6 +176,11 @@ namespace StubDb
             public IEnumerable<EntityConnection> GetAllConnections()
             {
                 return _storage;
+            }
+
+            public bool IsEmpty
+            {
+                get { return _storage.Count == 0; }
             }
 
             public void Clear()
