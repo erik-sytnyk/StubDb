@@ -35,17 +35,17 @@ namespace StubDb
 
         public void Add(TEntity entity)
         {
-            Context.Add<TEntity>(entity);
+            Context.Add(entity);
         }
 
         public void Update(TEntity entity)
         {
-            Context.Update<TEntity>(entity);
+            Context.Update(entity);
         }
 
         public void Remove(TEntity entity)
         {
-            Context.Remove<TEntity>(entity);
+            Context.Remove(entity);
         }
 
         public void Remove(int id)

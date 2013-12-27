@@ -81,8 +81,11 @@ namespace StabDbTests
             
             context.Instructors.Remove(alexInstructor);
 
+            var alexAfterRemove = context.Instructors.Query().SingleOrDefault(x => x.FirstName == "Alex" && x.Surname == "Bezborodov");
+            Assert.IsNull(alexAfterRemove);
+
             mathFromContext = context.Courses.Query().FirstOrDefault(x => x.Name == "Math");
-            Assert.IsNull(mathFromContext.Instructor);
+            Assert.IsNull(mathFromContext.Instructor);            
         }
 
         [TestMethod]

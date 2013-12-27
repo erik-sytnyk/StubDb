@@ -70,22 +70,18 @@ namespace StubDb
                 return dict.ContainsKey(id) ? dict[id] : type.GetDefault();
             }
 
-            public void Remove<T>(int id, T entity)
+            public void Remove(int id, Type type)
             {
-                var type = typeof(T);
-
                 _storage.AddIfNoEntry(type.FullName, new Dictionary<int, object>());
 
                 _storage[type.FullName].Remove(id);
             }
 
-            public int GetAvailableIdForEntityType<T>(T entityInstance)
+            public int GetAvailableIdForEntityType(Type entityType)
             {
-                var type = typeof(T);
+                _storage.AddIfNoEntry(entityType.FullName, new Dictionary<int, object>());
 
-                _storage.AddIfNoEntry(type.FullName, new Dictionary<int, object>());
-
-                var dict = _storage[type.FullName];
+                var dict = _storage[entityType.FullName];
 
                 return dict.Keys.Count > 0 ? dict.Keys.Max(x => x) + 1 : 1;
             }
@@ -297,31 +293,32 @@ namespace StubDb
             return result;
         }
 
-        public void Add<T>(T entity)
+        public void Add(object entity)
         {
             this.SetEntityAsNew(entity);
             this.Save(entity);
         }
 
-        public void Update<T>(T entity)
+        public void Update(object entity)
         {
             this.Save(entity);
         }
 
-        private void Save<T>(T entity)
+        private void Save(object entity)
         {
-            this.CheckIsEntityType(typeof(T));
+            var entityType = entity.GetType();
+            this.CheckIsEntityType(entityType);
 
-            var properties = EntityTypeManager.GetProperties(typeof(T));
+            var properties = EntityTypeManager.GetProperties(entityType);
 
             var entityId = GetEntityId(entity);
 
-            var existingEntity = this.Storage.Entities.GetById<T>(entityId);
+            var existingEntity = this.Storage.Entities.GetById(entityId, entityType);
             var isExistingEntity = existingEntity != null;
 
             if (!isExistingEntity)
             {
-                var newId = this.Storage.Entities.GetAvailableIdForEntityType(entity);
+                var newId = this.Storage.Entities.GetAvailableIdForEntityType(entityType);
 
                 SetEntityId(entity, newId);
 
@@ -361,20 +358,24 @@ namespace StubDb
                 {
                     var connectedType = entitiesToAdd.First().GetType();
 
-                    this.Storage.Connections.RemoveConnectionsFor(typeof(T), entityId, connectedType);
+                    this.Storage.Connections.RemoveConnectionsFor(entityType, entityId, connectedType);
 
                     foreach (var entityToAdd in entitiesToAdd)
                     {
-                        this.Storage.Connections.AddConnection(entity.GetType(), entityToAdd.GetType(), GetEntityId(entity), GetEntityId(entityToAdd));
+                        this.Storage.Connections.AddConnection(entityType, entityToAdd.GetType(), GetEntityId(entity), GetEntityId(entityToAdd));
                     }
                 }
             }
         }
 
-        public void Remove<T>(T entity)
+        public void Remove(object entity)
         {
+            var entityType = entity.GetType();
+            this.CheckIsEntityType(entityType);
+
             var entityId = this.GetEntityId(entity);
-            this.Remove(typeof(T), entityId);
+            
+            this.Remove(entityType, entityId);
         }
 
         internal void Remove(Type entityType, int id)
