@@ -7,8 +7,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Ext.Core;
 using Newtonsoft.Json;
+using StubDb.ModelStorage;
 
-namespace StubDb
+namespace StubDb.Persistence
 {
     public class SerializeToFilePersistenceProvider : IContextStoragePersistenceProvider
     {
@@ -45,7 +46,7 @@ namespace StubDb
                 Connections = new List<ConnectionContainer>();
             }
 
-            public DataContainer(StubContext.ContextStorage storage, List<Type> types)
+            public DataContainer(ContextStorage storage, List<Type> types)
                 : this()
             {
                 foreach (var entityType in types)
@@ -101,7 +102,7 @@ namespace StubDb
                 }
             }
 
-            public void LoadContextStorage(StubContext.ContextStorage storage, List<Type> types)
+            public void LoadContextStorage(ContextStorage storage, List<Type> types)
             {
                 storage.Clear();
 
@@ -116,7 +117,7 @@ namespace StubDb
                 }
             }
 
-            private void TryLoadContextStorage(StubContext.ContextStorage storage, List<Type> types)
+            private void TryLoadContextStorage(ContextStorage storage, List<Type> types)
             {
                 foreach (var entityContainer in this.Entities)
                 {
@@ -229,7 +230,7 @@ namespace StubDb
 
         #endregion
 
-        public void SaveContext(StubContext.ContextStorage storage, Dictionary<string, Type> types)
+        public void SaveContext(ContextStorage storage, Dictionary<string, Type> types)
         {
             var data = new DataContainer(storage, types.Select(x => x.Value).ToList());
 
@@ -248,7 +249,7 @@ namespace StubDb
             }
         }
 
-        public void LoadContext(StubContext.ContextStorage storage, Dictionary<string, Type> types)
+        public void LoadContext(ContextStorage storage, Dictionary<string, Type> types)
         {
             if (!File.Exists(DbFilePath)) return;
 

@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Ext.Core;
 using Ext.Core.Collections;
+using StubDb.ModelStorage;
+using StubDb.Persistence;
 
 namespace StubDb
 {
@@ -13,253 +15,21 @@ namespace StubDb
     {
         #region Nested Classes
 
-        //TODO add lock
-        public class ContextStorage
-        {
-            private EntityCollection _entities = new EntityCollection();
-            private ConnectionsCollection _connections = new ConnectionsCollection();
-
-            public EntityCollection Entities
-            {
-                get { return _entities; }
-                set { _entities = value; }
-            }
-
-            public ConnectionsCollection Connections
-            {
-                get { return _connections; }
-                set { _connections = value; }
-            }
-
-            public bool IsEmpty
-            {
-                get { return _entities.IsEmpty && _connections.IsEmpty; }
-            }
-
-            public void Clear()
-            {
-                _entities.Clear();
-                _connections.Clear();
-            }
-        }
-
-        public class EntityCollection
-        {
-            Dictionary<string, Dictionary<int, object>> _storage = new Dictionary<string, Dictionary<int, object>>();
-
-            public void Add(int id, object entity)
-            {
-                var type = entity.GetType();
-
-                _storage.AddIfNoEntry(type.FullName, new Dictionary<int, object>());
-
-                _storage[type.FullName].Add(id, entity);
-            }
-
-            public T GetById<T>(int id)
-            {
-                return (T)GetById(id, typeof(T));
-            }
-
-            public object GetById(int id, Type type)
-            {
-                _storage.AddIfNoEntry(type.FullName, new Dictionary<int, object>());
-
-                var dict = _storage[type.FullName];
-
-                return dict.ContainsKey(id) ? dict[id] : type.GetDefault();
-            }
-
-            public void Remove(int id, Type type)
-            {
-                _storage.AddIfNoEntry(type.FullName, new Dictionary<int, object>());
-
-                _storage[type.FullName].Remove(id);
-            }
-
-            public int GetAvailableIdForEntityType(Type entityType)
-            {
-                _storage.AddIfNoEntry(entityType.FullName, new Dictionary<int, object>());
-
-                var dict = _storage[entityType.FullName];
-
-                return dict.Keys.Count > 0 ? dict.Keys.Max(x => x) + 1 : 1;
-            }
-
-            public Dictionary<int, object> GetEntities<T>()
-            {
-                var type = typeof(T);
-
-                return GetEntities(type);
-            }
-
-            public Dictionary<int, object> GetEntities(Type entityType)
-            {
-                var result = new Dictionary<int, object>();
-
-                if (_storage.ContainsKey(entityType.FullName))
-                {
-                    result = _storage[entityType.FullName];
-                }
-
-                return result;
-            }
-
-            public bool IsEmpty
-            {
-                get { return _storage.Count == 0; }
-            }
-
-            public void Clear()
-            {
-                _storage.Clear();
-            }
-        }
-
-        public class ConnectionsCollection
-        {
-            private List<EntityConnection> _storage = new List<EntityConnection>();
-
-            public void AddConnection(Type typeFirst, Type typeSecond, int idFirst, int idSecond)
-            {
-                var newConnection = new EntityConnection(typeFirst.FullName, typeSecond.FullName, idFirst, idSecond);
-
-                var existingConnection = _storage.FirstOrDefault(x => x.Equals(newConnection));
-
-                if (existingConnection == null)
-                {
-                    _storage.Add(newConnection);
-                }
-            }
-
-            public void RemoveConnectionsFor(Type entityType, int entityId)
-            {
-                _storage.RemoveAll(x => x.TypeFirst == entityType.FullName && x.IdFirst == entityId);
-                _storage.RemoveAll(x => x.TypeSecond == entityType.FullName && x.IdSecond == entityId);
-            }
-
-            public void RemoveConnectionsFor(Type entityType, int entityId, Type connectionType)
-            {
-                var isRightOrder = EntityConnection.IsRightOrder(entityType, connectionType);
-
-                if (isRightOrder)
-                {
-                    _storage.RemoveAll(x => x.TypeFirst == entityType.FullName && x.TypeSecond == connectionType.FullName && x.IdFirst == entityId);
-                }
-                else
-                {
-                    _storage.RemoveAll(x => x.TypeSecond == entityType.FullName && x.TypeFirst == connectionType.FullName && x.IdSecond == entityId);
-                }
-            }
-
-            public List<EntityConnection> GetConnectionsFor(Type entityType, int entityId, Type connectionType)
-            {
-                var result = (List<EntityConnection>)null;
-                var isRightOrder = EntityConnection.IsRightOrder(entityType, connectionType);
-
-                if (isRightOrder)
-                {
-                    result = _storage.Where(x => x.TypeFirst == entityType.FullName && x.TypeSecond == connectionType.FullName && x.IdFirst == entityId).ToList();
-                }
-                else
-                {
-                    result = _storage.Where(x => x.TypeSecond == entityType.FullName && x.TypeFirst == connectionType.FullName && x.IdSecond == entityId).ToList();
-                }
-
-                return result;
-            }
-
-            public IEnumerable<EntityConnection> GetAllConnections()
-            {
-                return _storage;
-            }
-
-            public bool IsEmpty
-            {
-                get { return _storage.Count == 0; }
-            }
-
-            public void Clear()
-            {
-                _storage.Clear();
-            }
-        }
-
-        public class EntityConnection
-        {
-            public string TypeFirst { get; set; }
-            public string TypeSecond { get; set; }
-            public int IdFirst { get; set; }
-            public int IdSecond { get; set; }
-
-            public EntityConnection(string type1, string type2, int id1, int id2)
-            {
-                if (IsRightOrder(type1, type2))
-                {
-                    TypeFirst = type1;
-                    TypeSecond = type2;
-                    IdFirst = id1;
-                    IdSecond = id2;
-                }
-                else
-                {
-                    TypeFirst = type2;
-                    TypeSecond = type1;
-                    IdFirst = id2;
-                    IdSecond = id1;
-                }
-            }
-
-            public override bool Equals(object obj)
-            {
-                var entityConnnection = obj as EntityConnection;
-
-                if (entityConnnection == null) return false;
-
-                return entityConnnection.IdFirst == this.IdFirst && entityConnnection.IdSecond == this.IdSecond
-                    && entityConnnection.TypeFirst == this.TypeFirst && entityConnnection.TypeSecond == this.TypeSecond;
-            }
-
-            public override int GetHashCode()
-            {
-                return TypeFirst.GetHashCode() + TypeSecond.GetHashCode();
-            }
-
-            //TODO better name
-            public static bool IsRightOrder(string typeNameFirst, string typeNameSecond)
-            {
-                return System.String.Compare(typeNameFirst, typeNameSecond, System.StringComparison.Ordinal) > 0;
-            }
-
-            public static bool IsRightOrder(Type typeFirst, Type typeSecond)
-            {
-                return IsRightOrder(typeFirst.FullName, typeSecond.FullName);
-            }
-
-            public int GetIdByType(Type connectedEntityType)
-            {
-                if (TypeFirst == connectedEntityType.FullName)
-                {
-                    return IdFirst;
-                }
-                else if (TypeSecond == connectedEntityType.FullName)
-                {
-                    return IdSecond;
-                }
-
-                throw new Exception("Connection does not have this type");
-            }
-        }
-
         #endregion
 
-        protected ContextStorage Storage = new ContextStorage();
-        protected Dictionary<string, Type> Types = new Dictionary<string, Type>();
-
+        internal ContextStorage Storage = new ContextStorage();
+        internal Dictionary<string, Type> Types { get; set; }
+        internal List<RequiredDependancy> RequiredDependancies { get; set; }
+        protected ModelBuilder ModelBuilder { get; set; }
         public IContextStoragePersistenceProvider PersistenceProvider { get; set; }
 
         public StubContext()
         {
+            Types = new Dictionary<string, Type>();
+            RequiredDependancies = new List<RequiredDependancy>();
+
+            ModelBuilder = new ModelBuilder(this);
+
             var stubSets = EntityTypeManager.GetProperties(this.GetType()).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
 
             foreach (var propertyInfo in stubSets)
@@ -275,7 +45,14 @@ namespace StubDb
                 this.RegisterType(type);
             }
 
+            this.ConfigureModel();
+
             PersistenceProvider = new SerializeToFilePersistenceProvider();
+        }
+
+        public virtual void ConfigureModel()
+        {
+
         }
 
         //TODO performance
@@ -358,6 +135,14 @@ namespace StubDb
                 {
                     var connectedType = entitiesToAdd.First().GetType();
 
+                    if (this.Types.ContainsKey(connectedType.FullName))
+                    {
+                        foreach (var entityToAdd in entitiesToAdd)
+                        {
+                            this.Save(entityToAdd);
+                        }
+                    }
+
                     this.Storage.Connections.RemoveConnectionsFor(entityType, entityId, connectedType);
 
                     foreach (var entityToAdd in entitiesToAdd)
@@ -374,12 +159,30 @@ namespace StubDb
             this.CheckIsEntityType(entityType);
 
             var entityId = this.GetEntityId(entity);
-            
+
             this.Remove(entityType, entityId);
         }
 
         internal void Remove(Type entityType, int id)
         {
+            var requiredDependancies = this.RequiredDependancies.Where(x => x.EntityType == entityType.FullName).ToList();
+
+            foreach (var requiredDependancy in requiredDependancies)
+            {
+                var connectedIds = new List<int>();
+
+                var allConnections = this.Storage.Connections.GetAllConnections().ToList();
+
+                //add for cases when entity type first or second
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == entityType.FullName && x.TypeSecond == requiredDependancy.RequiredDependantType).Select(y => y.IdSecond));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredDependantType && x.TypeSecond == entityType.FullName).Select(y => y.IdFirst));
+                
+                foreach (var connectedId in connectedIds)
+                {
+                    this.Storage.Entities.Remove(connectedId, this.Types[requiredDependancy.RequiredDependantType]);    
+                }
+            }
+ 
             this.Storage.Connections.RemoveConnectionsFor(entityType, id);
             this.Storage.Entities.Remove(id, entityType);
         }
@@ -496,9 +299,9 @@ namespace StubDb
             this.Types.Add(type.FullName, type);
         }
 
-        private void CheckIsEntityType(Type type)
+        internal void CheckIsEntityType(Type type)
         {
-            Check.That(Types.ContainsKey(type.FullName), "Not registered entity type");
+            Check.That(Types.ContainsKey(type.FullName), String.Format("Type: {0} is not one of registered entity types", type.FullName));
         }
 
         public int GetEntityId<T>(T entity)
@@ -558,6 +361,85 @@ namespace StubDb
                     AddEntityTypes(entityType, typesDict);
                 }
             }
+        }
+
+        public string ToDisplayString()
+        {
+            var result = new StringBuilder();
+
+            var types = this.Types.Values.ToList();
+
+            var allConnections = this.Storage.Connections.GetAllConnections();
+
+            foreach (var entityType in types)
+            {
+                var entities = this.Storage.Entities.GetEntities(entityType).Values.ToList();
+
+                result.AppendLine(String.Format("{0}:", entityType.FullName));
+
+                result.AppendLine("");
+
+                result.AppendLine(String.Format("Values: {0} ", entities.Any() ? string.Empty : "---"));
+
+                foreach (var entity in entities)
+                {
+                    result.AppendLine(EntityToDisplayString(entity));
+                }
+
+                result.AppendLine("");
+
+                result.AppendLine("Connections:");
+
+                var connectionsGroupedByType = new Dictionary<string, List<Tuple<int, int>>>();
+
+                foreach (var entityConnection in allConnections.ToList())
+                {
+                    if (entityConnection.TypeFirst == entityType.FullName || entityConnection.TypeSecond == entityType.FullName)
+                    {
+                        var firstIsEntity = entityConnection.TypeFirst == entityType.FullName;
+
+                        var connectedType = firstIsEntity ? entityConnection.TypeFirst : entityConnection.TypeSecond;
+                        var entityId = firstIsEntity ? entityConnection.IdFirst : entityConnection.IdSecond;
+                        var connectedEntityId = firstIsEntity ? entityConnection.IdSecond : entityConnection.IdFirst;
+
+                        connectionsGroupedByType.AddIfNoEntry(connectedType, new List<Tuple<int, int>>());
+
+                        connectionsGroupedByType[connectedType].Add(new Tuple<int, int>(entityId, connectedEntityId));
+                    }
+                }
+
+                foreach (var connectedType in connectionsGroupedByType)
+                {
+                    result.AppendLine(String.Format("\tConnections to {0}: {1} ", connectedType.Key, connectionsGroupedByType.Keys.Any() ? string.Empty : "---"));
+
+                    foreach (var connectionIds in connectedType.Value)
+                    {
+                        result.AppendLine(String.Format("\t{0}-{1}", connectionIds.Item1, connectionIds.Item2));
+                    }
+                }
+
+                result.AppendLine("");
+            }
+
+
+            return result.ToString();
+        }
+
+        private string EntityToDisplayString(object entity)
+        {
+            var result = new StringBuilder();
+
+            var props = EntityTypeManager.GetSimpleWritableProperties(entity.GetType());
+
+            foreach (var propertyInfo in props)
+            {
+                var value = propertyInfo.GetValue(entity);
+                var name = propertyInfo.Name;
+
+                result.Append(String.Format("{0} = {1}; ", name, value));
+            }
+
+            return result.ToString();
         }
 
         #endregion

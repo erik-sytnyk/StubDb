@@ -7,7 +7,7 @@ using StubDb;
 namespace StabDbTests
 {
     [TestClass]
-    public class ObtainingEntityTypesTest
+    public class StubContextTest
     {
         public class Student
         {
@@ -38,6 +38,7 @@ namespace StabDbTests
 
         public class Location
         {
+            public int Id { get; set; }
             public string Building { get; set; }
             public string Room { get; set; }
         }
@@ -50,6 +51,16 @@ namespace StabDbTests
 
             public TestStubContext(): base()
             {
+            }
+        }
+
+        public class TestStubContextWithRequiredDependancies: TestStubContext
+        {
+            public override void ConfigureModel()
+            {
+                base.ConfigureModel();
+                
+                this.ModelBuilder.EntityHasRequiredDependant<Course>(x => x.Location);
             }
         }
 
@@ -71,8 +82,8 @@ namespace StabDbTests
 
         [TestMethod]
         public void should_keep_data_in_sync()
-        {
-            var context = this.InitializeTestContext();
+        {            
+            var context = this.InitializeTestContext(new TestStubContext());
 
             var mathFromContext = context.Courses.Query().FirstOrDefault(x => x.Name == "Math");
             Assert.IsNotNull(mathFromContext.Instructor);
@@ -91,7 +102,7 @@ namespace StabDbTests
         [TestMethod]
         public void should_save_and_load_context()
         {
-            var context = InitializeTestContext();
+            var context = InitializeTestContext(new TestStubContext());
 
             context.SaveData();
 
@@ -100,18 +111,42 @@ namespace StabDbTests
             Assert.AreEqual(context.Instructors.Query().Count(), 3);
         }
 
-        private TestStubContext InitializeTestContext()
+        [TestMethod]
+        public void should_save_dependant_types()
         {
-            var result = new TestStubContext();
+            var context = this.InitializeTestContext(new TestStubContext());
 
+            var literature = context.Courses.Query().SingleOrDefault(x => x.Name == "Literature");
+
+            Assert.IsNotNull(literature.Location);
+        }
+
+        [TestMethod]
+        public void should_delete_required_dependants()
+        {
+            var context = this.InitializeTestContext(new TestStubContextWithRequiredDependancies());
+
+            var literature = context.Courses.Query().SingleOrDefault(x => x.Name == "Literature");
+
+            Assert.AreEqual(context.Query<Location>().Count(), 1);
+
+            context.Remove(literature);
+
+            Assert.AreEqual(context.Query<Location>().Count(), 0);
+        }
+
+        private TestStubContext InitializeTestContext(TestStubContext context)
+        {
             var math = new Course() { Name = "Math" };
-            result.Courses.Add(math);
+            context.Courses.Add(math);
 
             var geography = new Course() { Name = "Geography" };
-            result.Courses.Add(geography);
+            context.Courses.Add(geography);
 
             var literature = new Course() { Name = "Literature" };
-            result.Courses.Add(literature);
+            literature.Location = new Location() { Building = "Unit 43", Room = "13-3" };
+
+            context.Courses.Add(literature);
 
             var alex = new Instructor() { FirstName = "Alex", Surname = "Bezborodov" };
 
@@ -119,15 +154,15 @@ namespace StabDbTests
             alex.Courses.Add(math);
             alex.Courses.Add(geography);
 
-            result.Instructors.Add(alex);
+            context.Instructors.Add(alex);
 
             var per = new Instructor() { FirstName = "Per", Surname = "Sudin" };
-            result.Instructors.Add(per);
+            context.Instructors.Add(per);
 
             var yegor = new Instructor() { FirstName = "Yegor", Surname = "Sytnyk" };
-            result.Instructors.Add(yegor);
+            context.Instructors.Add(yegor);
 
-            return result;
+            return context;
         }
     }
 }
