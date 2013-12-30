@@ -99,5 +99,32 @@ namespace StabDbTests
 
             Assert.AreEqual(context.Query<SingleDependant>().Count(), 0, "Dependant item was not deleted");
         }
+
+        [TestMethod]
+        public void should_not_delete_not_connected_dependants()
+        {
+            var context = new TestContext();
+
+            var container = (Container)null;
+
+            container = new Container() { Label = "ContainerFirst" };
+            container.SingleDependant = new SingleDependant() { Label = "FirstSingleDependant" };
+
+            context.Items.Add(container);
+
+            container = new Container() { Label = "ContainerSecond" };
+            container.SingleDependant = new SingleDependant() { Label = "SecondSingleDependant" };
+
+            context.Items.Add(container);
+
+            Assert.AreEqual(context.Query<SingleDependant>().Count(), 2);
+
+            var containerFromContext = context.Items.Query().Single(x => x.Label == "ContainerSecond");
+            context.Remove(containerFromContext);
+
+            var firstSingleDependant = context.Items.Query().SingleOrDefault(x => x.SingleDependant.Label == "FirstSingleDependant");
+
+            Assert.IsNotNull(firstSingleDependant, "Not related dependant was removed");
+        }
     }
 }

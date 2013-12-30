@@ -173,8 +173,8 @@ namespace StubDb
 
                 var allConnections = this.Storage.Connections.GetAllConnections().ToList();
 
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType && x.TypeSecond == requiredDependancy.RequiredType).Select(y => y.IdFirst));
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType && x.TypeSecond == requiredDependancy.DependantType).Select(y => y.IdSecond));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType && x.TypeSecond == requiredDependancy.RequiredType && x.IdSecond == id).Select(y => y.IdFirst));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType && x.TypeSecond == requiredDependancy.DependantType && x.IdFirst == id).Select(y => y.IdSecond));
                 
                 foreach (var connectedId in connectedIds)
                 {
