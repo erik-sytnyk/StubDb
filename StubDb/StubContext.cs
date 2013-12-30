@@ -178,7 +178,7 @@ namespace StubDb
                 
                 foreach (var connectedId in connectedIds)
                 {
-                    this.Storage.Entities.Remove(connectedId, this.Types[requiredDependancy.DependantType]);    
+                    this.Remove(this.Types[requiredDependancy.DependantType], connectedId);    
                 }
             }
  
