@@ -50,16 +50,16 @@ namespace StubDb.ModelStorage
 
         public static bool IsRightOrder(Type typeFirst, Type typeSecond)
         {
-            return IsRightOrder(typeFirst.FullName, typeSecond.FullName);
+            return IsRightOrder(typeFirst.GetId(), typeSecond.GetId());
         }
 
         public int GetIdByType(Type connectedEntityType)
         {
-            if (TypeFirst == connectedEntityType.FullName)
+            if (TypeFirst == connectedEntityType.GetId())
             {
                 return IdFirst;
             }
-            else if (TypeSecond == connectedEntityType.FullName)
+            else if (TypeSecond == connectedEntityType.GetId())
             {
                 return IdSecond;
             }

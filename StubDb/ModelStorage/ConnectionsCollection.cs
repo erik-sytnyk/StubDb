@@ -10,7 +10,7 @@ namespace StubDb.ModelStorage
 
         public void AddConnection(Type typeFirst, Type typeSecond, int idFirst, int idSecond)
         {
-            var newConnection = new EntityConnection(typeFirst.FullName, typeSecond.FullName, idFirst, idSecond);
+            var newConnection = new EntityConnection(typeFirst.GetId(), typeSecond.GetId(), idFirst, idSecond);
 
             var existingConnection = _storage.FirstOrDefault(x => x.Equals(newConnection));
 
@@ -22,8 +22,8 @@ namespace StubDb.ModelStorage
 
         public void RemoveConnectionsFor(Type entityType, int entityId)
         {
-            _storage.RemoveAll(x => x.TypeFirst == entityType.FullName && x.IdFirst == entityId);
-            _storage.RemoveAll(x => x.TypeSecond == entityType.FullName && x.IdSecond == entityId);
+            _storage.RemoveAll(x => x.TypeFirst == entityType.GetId() && x.IdFirst == entityId);
+            _storage.RemoveAll(x => x.TypeSecond == entityType.GetId() && x.IdSecond == entityId);
         }
 
         public void RemoveConnectionsFor(Type entityType, int entityId, Type connectionType)
@@ -32,11 +32,11 @@ namespace StubDb.ModelStorage
 
             if (isRightOrder)
             {
-                _storage.RemoveAll(x => x.TypeFirst == entityType.FullName && x.TypeSecond == connectionType.FullName && x.IdFirst == entityId);
+                _storage.RemoveAll(x => x.TypeFirst == entityType.GetId() && x.TypeSecond == connectionType.GetId() && x.IdFirst == entityId);
             }
             else
             {
-                _storage.RemoveAll(x => x.TypeSecond == entityType.FullName && x.TypeFirst == connectionType.FullName && x.IdSecond == entityId);
+                _storage.RemoveAll(x => x.TypeSecond == entityType.GetId() && x.TypeFirst == connectionType.GetId() && x.IdSecond == entityId);
             }
         }
 
@@ -47,11 +47,11 @@ namespace StubDb.ModelStorage
 
             if (isRightOrder)
             {
-                result = _storage.Where(x => x.TypeFirst == entityType.FullName && x.TypeSecond == connectionType.FullName && x.IdFirst == entityId).ToList();
+                result = _storage.Where(x => x.TypeFirst == entityType.GetId() && x.TypeSecond == connectionType.GetId() && x.IdFirst == entityId).ToList();
             }
             else
             {
-                result = _storage.Where(x => x.TypeSecond == entityType.FullName && x.TypeFirst == connectionType.FullName && x.IdSecond == entityId).ToList();
+                result = _storage.Where(x => x.TypeSecond == entityType.GetId() && x.TypeFirst == connectionType.GetId() && x.IdSecond == entityId).ToList();
             }
 
             return result;

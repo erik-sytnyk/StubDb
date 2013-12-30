@@ -2,7 +2,7 @@
 {
     public class RequiredDependancy
     {
-        public string EntityType { get; set; }
-        public string RequiredDependantType { get; set; }
+        public string DependantType { get; set; }
+        public string RequiredType { get; set; }
     }
 }

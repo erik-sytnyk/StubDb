@@ -35,6 +35,8 @@ namespace StubDb
             return GetProperties(type).Where(p => IsSimpleType(p.PropertyType) && p.SetMethod != null);
         }
 
+        public static bool UseFullTypeNameAsId { get; set; }
+
         public static bool IsSimpleType(Type type)
         {
             if (type.IsValueType || type == typeof(string))
@@ -60,6 +62,16 @@ namespace StubDb
         public static Type GetCollectionType(Type type)
         {
             return type.GetGenericArguments().Single();
+        }
+
+        public static string GetTypeId(Type type)
+        {
+            return UseFullTypeNameAsId ? type.FullName : type.Name;
+        }
+
+        public static string GetId(this Type type)
+        {
+            return GetTypeId(type);
         }
     }
 }

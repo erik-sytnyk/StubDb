@@ -15,26 +15,26 @@ namespace StubDb
             Context = context;
         }
 
-        public void EntityHasRequiredDependant<TEntity>(Expression<Func<TEntity, object>> dependantExpression)
+        public void EntityHasRequiredDependancy<TEntity>(Expression<Func<TEntity, object>> dependantExpression)
         {
             var propertyName = Meta.Name(dependantExpression);
 
-            var dependantType =
-                EntityTypeManager.GetProperties(typeof (TEntity)).Single(x => x.Name == propertyName).PropertyType;
+            var dependantType = EntityTypeManager.GetProperties(typeof(TEntity)).Single(x => x.Name == propertyName).PropertyType;
 
-            this.EntityHasRequiredDependant(typeof(TEntity), dependantType);
-                
+            this.EntityHasRequiredDependancy(typeof(TEntity), dependantType);                
         }
 
-        public void EntityHasRequiredDependant(Type entityType, Type requiredDependantType)
+        public void EntityHasRequiredDependancy(Type dependantType, Type requiredDependencyType)
         {
-            Context.CheckIsEntityType(entityType);
-            Context.CheckIsEntityType(requiredDependantType);
+            Context.CheckIsEntityType(dependantType);
+            Context.CheckIsEntityType(requiredDependencyType);
+
+            //TODO check that we do not have required curcular referecnes
 
             var dependancy = new RequiredDependancy()
                 {
-                    EntityType = entityType.FullName,
-                    RequiredDependantType = requiredDependantType.FullName
+                    DependantType = dependantType.GetId(),
+                    RequiredType = requiredDependencyType.GetId()
                 };
 
             Context.RequiredDependancies.Add(dependancy);

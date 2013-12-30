@@ -60,7 +60,7 @@ namespace StabDbTests
             {
                 base.ConfigureModel();
                 
-                this.ModelBuilder.EntityHasRequiredDependant<Course>(x => x.Location);
+                this.ModelBuilder.EntityHasRequiredDependancy<Course>(x => x.Location);
             }
         }
 
@@ -119,20 +119,6 @@ namespace StabDbTests
             var literature = context.Courses.Query().SingleOrDefault(x => x.Name == "Literature");
 
             Assert.IsNotNull(literature.Location);
-        }
-
-        [TestMethod]
-        public void should_delete_required_dependants()
-        {
-            var context = this.InitializeTestContext(new TestStubContextWithRequiredDependancies());
-
-            var literature = context.Courses.Query().SingleOrDefault(x => x.Name == "Literature");
-
-            Assert.AreEqual(context.Query<Location>().Count(), 1);
-
-            context.Remove(literature);
-
-            Assert.AreEqual(context.Query<Location>().Count(), 0);
         }
 
         private TestStubContext InitializeTestContext(TestStubContext context)

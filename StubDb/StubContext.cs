@@ -121,7 +121,7 @@ namespace StubDb
                         entitiesToAdd.Add(item);
                     }
                 }
-                else if (Types.ContainsKey(propertyInfo.PropertyType.FullName))
+                else if (Types.ContainsKey(propertyInfo.PropertyType.GetId()))
                 {
                     var entityToAdd = propertyInfo.GetValue(entity);
 
@@ -135,7 +135,7 @@ namespace StubDb
                 {
                     var connectedType = entitiesToAdd.First().GetType();
 
-                    if (this.Types.ContainsKey(connectedType.FullName))
+                    if (this.Types.ContainsKey(connectedType.GetId()))
                     {
                         foreach (var entityToAdd in entitiesToAdd)
                         {
@@ -165,7 +165,7 @@ namespace StubDb
 
         internal void Remove(Type entityType, int id)
         {
-            var requiredDependancies = this.RequiredDependancies.Where(x => x.EntityType == entityType.FullName).ToList();
+            var requiredDependancies = this.RequiredDependancies.Where(x => x.RequiredType == entityType.GetId()).ToList();
 
             foreach (var requiredDependancy in requiredDependancies)
             {
@@ -173,13 +173,12 @@ namespace StubDb
 
                 var allConnections = this.Storage.Connections.GetAllConnections().ToList();
 
-                //add for cases when entity type first or second
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == entityType.FullName && x.TypeSecond == requiredDependancy.RequiredDependantType).Select(y => y.IdSecond));
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredDependantType && x.TypeSecond == entityType.FullName).Select(y => y.IdFirst));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType && x.TypeSecond == requiredDependancy.RequiredType).Select(y => y.IdFirst));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType && x.TypeSecond == requiredDependancy.DependantType).Select(y => y.IdSecond));
                 
                 foreach (var connectedId in connectedIds)
                 {
-                    this.Storage.Entities.Remove(connectedId, this.Types[requiredDependancy.RequiredDependantType]);    
+                    this.Storage.Entities.Remove(connectedId, this.Types[requiredDependancy.DependantType]);    
                 }
             }
  
@@ -285,7 +284,7 @@ namespace StubDb
             foreach (var enumerableProperty in enumerableProperties)
             {
                 var typeOfCollection = EntityTypeManager.GetCollectionType(enumerableProperty.PropertyType);
-                result.AddIfNoEntry(typeOfCollection.FullName, typeOfCollection);
+                result.AddIfNoEntry(typeOfCollection.GetId(), typeOfCollection);
                 AddEntityTypes(typeOfCollection, result);
             }
 
@@ -296,12 +295,12 @@ namespace StubDb
 
         public void RegisterType(Type type)
         {
-            this.Types.Add(type.FullName, type);
+            this.Types.Add(type.GetId(), type);
         }
 
         internal void CheckIsEntityType(Type type)
         {
-            Check.That(Types.ContainsKey(type.FullName), String.Format("Type: {0} is not one of registered entity types", type.FullName));
+            Check.That(Types.ContainsKey(type.GetId()), String.Format("Type: {0} is not one of registered entity types", type.GetId()));
         }
 
         public int GetEntityId<T>(T entity)
@@ -355,9 +354,9 @@ namespace StubDb
                     entityType = propertyInfo.PropertyType;
                 }
 
-                if (entityType != null && !typesDict.ContainsKey(entityType.FullName))
+                if (entityType != null && !typesDict.ContainsKey(entityType.GetId()))
                 {
-                    typesDict.AddIfNoEntry(entityType.FullName, entityType);
+                    typesDict.AddIfNoEntry(entityType.GetId(), entityType);
                     AddEntityTypes(entityType, typesDict);
                 }
             }
@@ -375,30 +374,33 @@ namespace StubDb
             {
                 var entities = this.Storage.Entities.GetEntities(entityType).Values.ToList();
 
-                result.AppendLine(String.Format("{0}:", entityType.FullName));
+                result.AppendLine(String.Format("{0}:", entityType.GetId()));
 
                 result.AppendLine("");
 
-                result.AppendLine(String.Format("Values: {0} ", entities.Any() ? string.Empty : "---"));
+                result.Append(GlobalConstants.SpecialSymbols.Tab);
+                result.AppendLine("Values:");
 
                 foreach (var entity in entities)
                 {
-                    result.AppendLine(EntityToDisplayString(entity));
+                    result.Append(GlobalConstants.SpecialSymbols.Tab);
+                    result.AppendLine(GlobalConstants.SpecialSymbols.Tab + EntityToDisplayString(entity));
                 }
 
                 result.AppendLine("");
 
+                result.Append(GlobalConstants.SpecialSymbols.Tab);
                 result.AppendLine("Connections:");
 
                 var connectionsGroupedByType = new Dictionary<string, List<Tuple<int, int>>>();
 
                 foreach (var entityConnection in allConnections.ToList())
                 {
-                    if (entityConnection.TypeFirst == entityType.FullName || entityConnection.TypeSecond == entityType.FullName)
+                    if (entityConnection.TypeFirst == entityType.GetId() || entityConnection.TypeSecond == entityType.GetId())
                     {
-                        var firstIsEntity = entityConnection.TypeFirst == entityType.FullName;
+                        var firstIsEntity = entityConnection.TypeFirst == entityType.GetId();
 
-                        var connectedType = firstIsEntity ? entityConnection.TypeFirst : entityConnection.TypeSecond;
+                        var connectedType = firstIsEntity ? entityConnection.TypeSecond : entityConnection.TypeFirst;
                         var entityId = firstIsEntity ? entityConnection.IdFirst : entityConnection.IdSecond;
                         var connectedEntityId = firstIsEntity ? entityConnection.IdSecond : entityConnection.IdFirst;
 
@@ -410,11 +412,17 @@ namespace StubDb
 
                 foreach (var connectedType in connectionsGroupedByType)
                 {
-                    result.AppendLine(String.Format("\tConnections to {0}: {1} ", connectedType.Key, connectionsGroupedByType.Keys.Any() ? string.Empty : "---"));
+                    result.AppendLine("");
+
+                    result.Append(GlobalConstants.SpecialSymbols.Tab);
+                    result.Append(GlobalConstants.SpecialSymbols.Tab);
+                    result.AppendLine(String.Format("To {0}:", connectedType.Key));
 
                     foreach (var connectionIds in connectedType.Value)
                     {
-                        result.AppendLine(String.Format("\t{0}-{1}", connectionIds.Item1, connectionIds.Item2));
+                        result.Append(GlobalConstants.SpecialSymbols.Tab);
+                        result.Append(GlobalConstants.SpecialSymbols.Tab);
+                        result.AppendLine(String.Format("{0}-{1}", connectionIds.Item1, connectionIds.Item2));
                     }
                 }
 

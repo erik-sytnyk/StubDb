@@ -53,7 +53,7 @@ namespace StubDb.Persistence
                 {
                     var entityContainer = new EntityContainer();
 
-                    entityContainer.TypeName = entityType.FullName;
+                    entityContainer.TypeName = entityType.GetId();
 
                     var simpleProperties = this.GetSimpleProperties(entityType).ToList();
 
@@ -121,7 +121,7 @@ namespace StubDb.Persistence
             {
                 foreach (var entityContainer in this.Entities)
                 {
-                    var type = types.FirstOrDefault(x => x.FullName == entityContainer.TypeName);
+                    var type = types.FirstOrDefault(x => x.GetId() == entityContainer.TypeName);
 
                     if (type != null)
                     {
@@ -166,8 +166,8 @@ namespace StubDb.Persistence
 
                 foreach (var connectionContainer in this.Connections)
                 {
-                    var firstType = types.FirstOrDefault(x => x.FullName == connectionContainer.FirstType);
-                    var secondType = types.FirstOrDefault(x => x.FullName == connectionContainer.SecondType);
+                    var firstType = types.FirstOrDefault(x => x.GetId() == connectionContainer.FirstType);
+                    var secondType = types.FirstOrDefault(x => x.GetId() == connectionContainer.SecondType);
 
                     if (firstType != null && secondType != null)
                     {
