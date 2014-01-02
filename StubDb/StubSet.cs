@@ -9,14 +9,13 @@ using System.Threading.Tasks;
 
 namespace StubDb
 {
-    //TODO let properties to be of interface type in Context
     public interface IStubSet<TEntity>
     {
         void Add(TEntity entity);
         void Update(TEntity entity);
         void Remove(TEntity entity);
         void Remove(int id);
-        IQueryable<TEntity> Query();
+        IQueryable<TEntity> Query(int levelOfDependenciesToLoad);
     }
 
     public class StubSet<TEntity>: IStubSet<TEntity>
@@ -53,9 +52,9 @@ namespace StubDb
             Context.Remove(typeof(TEntity), id);
         }
 
-        public IQueryable<TEntity> Query()
+        public IQueryable<TEntity> Query(int levelOfDependenciesToLoad = 1)
         {
-            return Context.Query<TEntity>();
+            return Context.Query<TEntity>(levelOfDependenciesToLoad);
         }
     }
 }

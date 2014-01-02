@@ -11,7 +11,7 @@ namespace StubDb.ModelStorage
 
         public EntityConnection(string type1, string type2, int id1, int id2)
         {
-            if (IsRightOrder(type1, type2))
+            if (IsDefaultTypeStoringOrder(type1, type2))
             {
                 TypeFirst = type1;
                 TypeSecond = type2;
@@ -42,15 +42,14 @@ namespace StubDb.ModelStorage
             return TypeFirst.GetHashCode() + TypeSecond.GetHashCode();
         }
 
-        //TODO better name
-        public static bool IsRightOrder(string typeNameFirst, string typeNameSecond)
+        public static bool IsDefaultTypeStoringOrder(string typeNameFirst, string typeNameSecond)
         {
             return String.Compare(typeNameFirst, typeNameSecond, StringComparison.Ordinal) > 0;
         }
 
-        public static bool IsRightOrder(Type typeFirst, Type typeSecond)
+        public static bool IsDefaultTypeStoringOrder(Type typeFirst, Type typeSecond)
         {
-            return IsRightOrder(typeFirst.GetId(), typeSecond.GetId());
+            return IsDefaultTypeStoringOrder(typeFirst.GetId(), typeSecond.GetId());
         }
 
         public int GetIdByType(Type connectedEntityType)

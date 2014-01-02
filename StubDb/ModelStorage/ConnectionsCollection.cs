@@ -28,7 +28,7 @@ namespace StubDb.ModelStorage
 
         public void RemoveConnectionsFor(Type entityType, int entityId, Type connectionType)
         {
-            var isRightOrder = EntityConnection.IsRightOrder(entityType, connectionType);
+            var isRightOrder = EntityConnection.IsDefaultTypeStoringOrder(entityType, connectionType);
 
             if (isRightOrder)
             {
@@ -43,7 +43,7 @@ namespace StubDb.ModelStorage
         public List<EntityConnection> GetConnectionsFor(Type entityType, int entityId, Type connectionType)
         {
             var result = (List<EntityConnection>)null;
-            var isRightOrder = EntityConnection.IsRightOrder(entityType, connectionType);
+            var isRightOrder = EntityConnection.IsDefaultTypeStoringOrder(entityType, connectionType);
 
             if (isRightOrder)
             {

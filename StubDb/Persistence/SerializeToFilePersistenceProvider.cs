@@ -59,7 +59,7 @@ namespace StubDb.Persistence
 
                     entityContainer.Properties = this.GetPropertiesString(simpleProperties);
 
-                    var entities = storage.Entities.GetEntities(entityType).Values;
+                    var entities = storage.Entities.GetEntities(entityType);
 
                     foreach (var entity in entities)
                     {
@@ -144,7 +144,7 @@ namespace StubDb.Persistence
                         {
                             var values = valuesString.Split(new string[] { SeparatorString }, StringSplitOptions.None);
 
-                            var entity = Activator.CreateInstance(type);
+                            var entity = EntityTypeManager.CreateNew(type);
 
                             int entityId = -1;
 

@@ -71,12 +71,13 @@ namespace StabDbTests
             Assert.AreEqual(types.Count, 4);
         }
 
+        //TODO move to EnTyMa test
         [TestMethod]
         public void should_get_entity_id()
         {
             var context = new TestStubContext();
             var student = new Student() {Id = 5, Surname = "SomeOne"};
-            var id = context.GetEntityId(student);
+            var id = EntityTypeManager.GetEntityId(student);
             Assert.AreEqual(id, 5);
         }
 
@@ -119,6 +120,54 @@ namespace StabDbTests
             var literature = context.Courses.Query().SingleOrDefault(x => x.Name == "Literature");
 
             Assert.IsNotNull(literature.Location);
+        }
+
+        [TestMethod]
+        public void should_update_dependencies()
+        {
+            var context = this.InitializeTestContext(new TestStubContext());
+
+            var alex = context.Instructors.Query().Single(x => x.Surname == "Bezborodov");
+            
+            Assert.AreEqual(alex.Courses.Count, 2);
+
+            alex.Courses.RemoveAll(x => x.Name == "Math");
+
+            context.Instructors.Update(alex);
+
+            alex = context.Instructors.Query().Single(x => x.Surname == "Bezborodov");
+
+            Assert.AreEqual(alex.Courses.Count, 1);
+        }
+
+        [TestMethod]
+        public void should_clear_navigation_properties_if_not_loading_them()
+        {
+            var context = this.InitializeTestContext(new TestStubContext());
+
+            var math = context.Courses.Query().Single(x => x.Name == "Math");
+
+            math.Location = new Location() {};
+
+            var alex = context.Instructors.Query().Single(x => x.Surname == "Bezborodov");
+
+            var mathFromAlex = alex.Courses.Single(x => x.Name == "Math");
+
+            Assert.IsNull(mathFromAlex.Location);
+        }
+
+        [TestMethod]
+        public void should_load_more_than_one_level_of_pependencies()
+        {
+            var context = this.InitializeTestContext(new TestStubContext());
+
+            var math = (Course) null;
+
+            math = context.Courses.Query(1).Single(x => x.Name == "Math");
+            Assert.IsNull(math.Instructor.Courses);
+
+            math = context.Courses.Query(2).Single(x => x.Name == "Math");
+            Assert.AreNotEqual(math.Instructor.Courses.Count, 0);
         }
 
         private TestStubContext InitializeTestContext(TestStubContext context)

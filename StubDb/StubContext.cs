@@ -34,7 +34,7 @@ namespace StubDb
 
             foreach (var propertyInfo in stubSets)
             {
-                var stubSet = Activator.CreateInstance(propertyInfo.PropertyType);
+                var stubSet = EntityTypeManager.CreateNew(propertyInfo.PropertyType);
                 stubSet.SetProperty("Context", this);
                 propertyInfo.SetValue(this, stubSet);
             }
@@ -55,7 +55,6 @@ namespace StubDb
 
         }
 
-        //TODO performance
         public StubSet<TEntity> GetStubSet<TEntity>()
         {
             var result = (StubSet<TEntity>)null;
@@ -72,7 +71,7 @@ namespace StubDb
 
         public void Add(object entity)
         {
-            this.SetEntityAsNew(entity);
+            EntityTypeManager.SetEntityAsNew(entity);
             this.Save(entity);
         }
 
@@ -88,7 +87,7 @@ namespace StubDb
 
             var properties = EntityTypeManager.GetProperties(entityType);
 
-            var entityId = GetEntityId(entity);
+            var entityId = EntityTypeManager.GetEntityId(entity);
 
             var existingEntity = this.Storage.Entities.GetById(entityId, entityType);
             var isExistingEntity = existingEntity != null;
@@ -97,7 +96,7 @@ namespace StubDb
             {
                 var newId = this.Storage.Entities.GetAvailableIdForEntityType(entityType);
 
-                SetEntityId(entity, newId);
+                EntityTypeManager.SetEntityId(entity, newId);
 
                 this.Storage.Entities.Add(newId, entity);
             }
@@ -112,7 +111,7 @@ namespace StubDb
 
                     if (collection == null)
                     {
-                        collection = (IEnumerable)Activator.CreateInstance(propertyInfo.PropertyType);
+                        collection = (IEnumerable)EntityTypeManager.CreateNew(propertyInfo.PropertyType);
                         propertyInfo.SetValue(entity, collection);
                     }
 
@@ -147,10 +146,12 @@ namespace StubDb
 
                     foreach (var entityToAdd in entitiesToAdd)
                     {
-                        this.Storage.Connections.AddConnection(entityType, entityToAdd.GetType(), GetEntityId(entity), GetEntityId(entityToAdd));
+                        this.Storage.Connections.AddConnection(entityType, entityToAdd.GetType(), EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(entityToAdd));
                     }
                 }
             }
+
+            this.DeepClearNavigationProperties(entity);
         }
 
         public void Remove(object entity)
@@ -158,7 +159,7 @@ namespace StubDb
             var entityType = entity.GetType();
             this.CheckIsEntityType(entityType);
 
-            var entityId = this.GetEntityId(entity);
+            var entityId = EntityTypeManager.GetEntityId(entity);
 
             this.Remove(entityType, entityId);
         }
@@ -175,86 +176,33 @@ namespace StubDb
 
                 connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType && x.TypeSecond == requiredDependancy.RequiredType && x.IdSecond == id).Select(y => y.IdFirst));
                 connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType && x.TypeSecond == requiredDependancy.DependantType && x.IdFirst == id).Select(y => y.IdSecond));
-                
+
                 foreach (var connectedId in connectedIds)
                 {
-                    this.Remove(this.Types[requiredDependancy.DependantType], connectedId);    
+                    this.Remove(this.Types[requiredDependancy.DependantType], connectedId);
                 }
             }
- 
+
             this.Storage.Connections.RemoveConnectionsFor(entityType, id);
             this.Storage.Entities.Remove(id, entityType);
         }
 
         public IQueryable<T> Query<T>()
         {
+            return Query<T>(1);
+        }
+
+        public IQueryable<T> Query<T>(int dependenciesLevel)
+        {
             var list = new List<T>();
 
-            var entities = this.Storage.Entities.GetEntities<T>();
+            var entities = this.Storage.Entities.GetEntities(typeof(T));
 
-            foreach (var entity in entities.Values)
+            foreach (var entity in entities)
             {
                 list.Add((T)entity);
 
-                var entityId = this.GetEntityId(entity);
-
-                foreach (var propertyInfo in EntityTypeManager.GetProperties(typeof(T)))
-                {
-                    if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
-                    {
-                        var connectedEntityType = EntityTypeManager.GetCollectionType(propertyInfo.PropertyType);
-                        var connections = this.Storage.Connections.GetConnectionsFor(typeof(T), entityId, connectedEntityType);
-
-                        if (connections.Count > 0)
-                        {
-                            var connectedList = propertyInfo.GetValue(entity) as IList;
-
-                            if (connectedList == null)
-                            {
-                                connectedList = Activator.CreateInstance(propertyInfo.PropertyType) as IList;
-
-                                Check.NotNull(connectedList, "Collections in entity should implement IList"); //TODO support ICollection
-
-                                propertyInfo.SetValue(entity, connectedList);
-                            }
-                            else
-                            {
-                                connectedList.Clear();
-                            }
-
-                            foreach (var entityConnection in connections)
-                            {
-                                var connectedId = entityConnection.GetIdByType(connectedEntityType);
-
-                                var entityToAdd = this.Storage.Entities.GetById(connectedId, connectedEntityType);
-
-                                connectedList.Add(entityToAdd);
-                            }
-                        }
-                    }
-                    else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
-                    {
-                        var connectedEntityType = propertyInfo.PropertyType;
-                        var connections = this.Storage.Connections.GetConnectionsFor(typeof(T), entityId, connectedEntityType);
-
-                        Check.That(connections.Count <= 1, "Multiple connections for one to one relation");
-
-                        if (connections.Count == 1)
-                        {
-                            var entityConnection = connections.Single();
-
-                            var connectedId = entityConnection.GetIdByType(connectedEntityType);
-
-                            var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedEntityType);
-
-                            propertyInfo.SetValue(entity, connectedEntity);
-                        }
-                        else //no connection, so clear property
-                        {
-                            propertyInfo.SetValue(entity, null);
-                        }
-                    }
-                }
+                LoadNavigationProperties(dependenciesLevel - 1, entity);
             }
 
             return list.AsQueryable();
@@ -279,13 +227,13 @@ namespace StubDb
         {
             var result = new Dictionary<string, Type>();
 
-            var enumerableProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType));
+            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType));
 
-            foreach (var enumerableProperty in enumerableProperties)
+            foreach (var stubSetProperty in stubSetProperties)
             {
-                var typeOfCollection = EntityTypeManager.GetCollectionType(enumerableProperty.PropertyType);
-                result.AddIfNoEntry(typeOfCollection.GetId(), typeOfCollection);
-                AddEntityTypes(typeOfCollection, result);
+                var typeOfStubSet = EntityTypeManager.GetCollectionType(stubSetProperty.PropertyType);
+                result.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
+                AddEntityTypes(typeOfStubSet, result);
             }
 
             return result.Values.ToList();
@@ -301,41 +249,6 @@ namespace StubDb
         internal void CheckIsEntityType(Type type)
         {
             Check.That(Types.ContainsKey(type.GetId()), String.Format("Type: {0} is not one of registered entity types", type.GetId()));
-        }
-
-        public int GetEntityId<T>(T entity)
-        {
-            var type = entity.GetType();
-
-            var idProp = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
-
-            Check.That(idProp != null, "Entity type does not have id property");
-
-            Check.That(idProp.PropertyType == typeof(int), "Entity id is not of type integer");
-
-            return (int)idProp.GetValue(entity);
-        }
-
-        private bool IsEntityNew<T>(T entity)
-        {
-            return GetEntityId(entity) != 0; //(int)entity.GetType().GetDefault();
-        }
-
-        private void SetEntityAsNew<T>(T entity)
-        {
-            var id = this.GetEntityId(entity);
-
-            if (id != 0)
-            {
-                this.SetEntityId(entity, 0);
-            }
-        }
-
-        private void SetEntityId<T>(T entity, int id)
-        {
-            var type = entity.GetType();
-            var idProp = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
-            idProp.SetValue(entity, id);
         }
 
         private static void AddEntityTypes(Type type, Dictionary<string, Type> typesDict)
@@ -362,6 +275,110 @@ namespace StubDb
             }
         }
 
+        private void LoadNavigationProperties(int dependenciesLevel, object entity)
+        {
+            var entityId = EntityTypeManager.GetEntityId(entity);
+            var entityType = entity.GetType();
+
+            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
+            {
+                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
+                {
+                    var connectedEntityType = EntityTypeManager.GetCollectionType(propertyInfo.PropertyType);
+                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, entityId, connectedEntityType);
+
+                    if (connections.Count > 0)
+                    {
+                        var connectedCollection = propertyInfo.GetValue(entity);
+
+                        if (connectedCollection == null)
+                        {
+                            connectedCollection = EntityTypeManager.CreateNew(propertyInfo.PropertyType);
+                            propertyInfo.SetValue(entity, connectedCollection);
+                        }
+                        else
+                        {
+                            EntityTypeManager.ClearCollection(connectedCollection);
+                        }
+
+                        foreach (var entityConnection in connections)
+                        {
+                            var connectedId = entityConnection.GetIdByType(connectedEntityType);
+
+                            var entityToAdd = this.Storage.Entities.GetById(connectedId, connectedEntityType);
+
+                            if (dependenciesLevel > 0)
+                            {
+                                LoadNavigationProperties(dependenciesLevel - 1, entityToAdd);
+                            }
+
+                            EntityTypeManager.AddToCollection(connectedCollection, entityToAdd);
+                        }
+                    }
+                }
+                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
+                {
+                    var connectedEntityType = propertyInfo.PropertyType;
+                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, entityId, connectedEntityType);
+
+                    Check.That(connections.Count <= 1, "Multiple connections for one to one relation");
+
+                    if (connections.Count == 1)
+                    {
+                        var entityConnection = connections.Single();
+
+                        var connectedId = entityConnection.GetIdByType(connectedEntityType);
+
+                        var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedEntityType);
+
+                        if (dependenciesLevel > 0)
+                        {
+                            LoadNavigationProperties(dependenciesLevel - 1, connectedEntity);
+                        }
+
+                        propertyInfo.SetValue(entity, connectedEntity);
+                    }
+                    else //no connection, so clear property
+                    {
+                        propertyInfo.SetValue(entity, null);
+                    }
+                }
+            }
+        }
+
+        private void DeepClearNavigationProperties(object entity)
+        {
+            var entityType = entity.GetType();
+
+            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
+            {
+                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
+                {
+                    var connectedCollection = propertyInfo.GetValue(entity) as IEnumerable;
+
+                    if (connectedCollection != null)
+                    {
+                        foreach (var collectionItem in connectedCollection)
+                        {
+                            DeepClearNavigationProperties(collectionItem);
+                        }
+                        propertyInfo.SetValue(entity, null);
+                    }
+                }
+                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
+                {
+                    var connectedProperty = propertyInfo.GetValue(entity);
+
+                    if (connectedProperty != null)
+                    {
+                        DeepClearNavigationProperties(connectedProperty);
+                        propertyInfo.SetValue(entity, null);
+                    }
+
+                }
+            }
+        }
+
         public string ToDisplayString()
         {
             var result = new StringBuilder();
@@ -372,7 +389,7 @@ namespace StubDb
 
             foreach (var entityType in types)
             {
-                var entities = this.Storage.Entities.GetEntities(entityType).Values.ToList();
+                var entities = this.Storage.Entities.GetEntities(entityType);
 
                 result.AppendLine(String.Format("{0}:", entityType.GetId()));
 

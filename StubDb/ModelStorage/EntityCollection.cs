@@ -19,18 +19,19 @@ namespace StubDb.ModelStorage
             _storage[type.GetId()].Add(id, entity);
         }
 
-        public T GetById<T>(int id)
-        {
-            return (T)GetById(id, typeof(T));
-        }
-
         public object GetById(int id, Type type)
         {
             _storage.AddIfNoEntry(type.GetId(), new Dictionary<int, object>());
 
             var dict = _storage[type.GetId()];
 
-            return dict.ContainsKey(id) ? dict[id] : type.GetDefault();
+            if (dict.ContainsKey(id))
+            {
+                var entity = dict[id];
+                return EntityTypeManager.CloneObject(entity);
+            }
+
+            return type.GetDefault();
         }
 
         public void Remove(int id, Type type)
@@ -49,20 +50,13 @@ namespace StubDb.ModelStorage
             return dict.Keys.Count > 0 ? dict.Keys.Max(x => x) + 1 : 1;
         }
 
-        public Dictionary<int, object> GetEntities<T>()
+        public List<object> GetEntities(Type entityType)
         {
-            var type = typeof(T);
-
-            return GetEntities(type);
-        }
-
-        public Dictionary<int, object> GetEntities(Type entityType)
-        {
-            var result = new Dictionary<int, object>();
+            var result = new List<object>();
 
             if (_storage.ContainsKey(entityType.GetId()))
             {
-                result = _storage[entityType.GetId()];
+                result = _storage[entityType.GetId()].Values.Select(EntityTypeManager.CloneObject).ToList();
             }
 
             return result;

@@ -2,7 +2,6 @@
 {
     public class ContextStorage
     {
-        //TODO add lock
         private EntityCollection _entities = new EntityCollection();
         private ConnectionsCollection _connections = new ConnectionsCollection();
 
