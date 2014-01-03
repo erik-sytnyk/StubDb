@@ -59,7 +59,7 @@ namespace StubDb
         {
             var result = (StubSet<TEntity>)null;
 
-            var property = EntityTypeManager.GetProperties(this.GetType()).SingleOrDefault(x => EntityTypeManager.IsStubSet(x.PropertyType) && EntityTypeManager.GetCollectionType(x.PropertyType) == typeof(TEntity));
+            var property = EntityTypeManager.GetProperties(this.GetType()).SingleOrDefault(x => EntityTypeManager.IsStubSet(x.PropertyType) && EntityTypeManager.GetEnumerableType(x.PropertyType) == typeof(TEntity));
 
             if (property != null)
             {
@@ -105,7 +105,9 @@ namespace StubDb
             {
                 var entitiesToAdd = new List<object>();
 
-                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
+                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+
+                if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
                 {
                     var collection = propertyInfo.GetValue(entity) as IEnumerable;
 
@@ -227,11 +229,11 @@ namespace StubDb
         {
             var result = new Dictionary<string, Type>();
 
-            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType));
+            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
 
             foreach (var stubSetProperty in stubSetProperties)
             {
-                var typeOfStubSet = EntityTypeManager.GetCollectionType(stubSetProperty.PropertyType);
+                var typeOfStubSet = stubSetProperty.PropertyType.GetGenericArguments().First();
                 result.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
                 AddEntityTypes(typeOfStubSet, result);
             }
@@ -258,9 +260,11 @@ namespace StubDb
             {
                 var entityType = (Type)null;
 
-                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
+                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+
+                if (enumerableType != null && !EntityTypeManager.IsSimpleType(enumerableType))
                 {
-                    entityType = EntityTypeManager.GetCollectionType(propertyInfo.PropertyType);
+                    entityType = enumerableType;
                 }
                 else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
                 {
@@ -282,24 +286,16 @@ namespace StubDb
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
             {
-                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
+                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+
+                if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
                 {
-                    var connectedEntityType = EntityTypeManager.GetCollectionType(propertyInfo.PropertyType);
+                    var connectedEntityType = enumerableType;
                     var connections = this.Storage.Connections.GetConnectionsFor(entityType, entityId, connectedEntityType);
 
                     if (connections.Count > 0)
                     {
-                        var connectedCollection = propertyInfo.GetValue(entity);
-
-                        if (connectedCollection == null)
-                        {
-                            connectedCollection = EntityTypeManager.CreateNew(propertyInfo.PropertyType);
-                            propertyInfo.SetValue(entity, connectedCollection);
-                        }
-                        else
-                        {
-                            EntityTypeManager.ClearCollection(connectedCollection);
-                        }
+                        var newList = EntityTypeManager.CreateGenericList(connectedEntityType);
 
                         foreach (var entityConnection in connections)
                         {
@@ -312,8 +308,10 @@ namespace StubDb
                                 LoadNavigationProperties(dependenciesLevel - 1, entityToAdd);
                             }
 
-                            EntityTypeManager.AddToCollection(connectedCollection, entityToAdd);
+                            newList.Add(entityToAdd);
                         }
+
+                        propertyInfo.SetValue(entity, newList);
                     }
                 }
                 else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
@@ -352,7 +350,9 @@ namespace StubDb
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
             {
-                if (EntityTypeManager.IsCollection(propertyInfo.PropertyType))
+                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+
+                if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
                 {
                     var connectedCollection = propertyInfo.GetValue(entity) as IEnumerable;
 

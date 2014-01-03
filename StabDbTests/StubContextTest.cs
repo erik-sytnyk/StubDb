@@ -71,16 +71,6 @@ namespace StabDbTests
             Assert.AreEqual(types.Count, 4);
         }
 
-        //TODO move to EnTyMa test
-        [TestMethod]
-        public void should_get_entity_id()
-        {
-            var context = new TestStubContext();
-            var student = new Student() {Id = 5, Surname = "SomeOne"};
-            var id = EntityTypeManager.GetEntityId(student);
-            Assert.AreEqual(id, 5);
-        }
-
         [TestMethod]
         public void should_keep_data_in_sync()
         {            

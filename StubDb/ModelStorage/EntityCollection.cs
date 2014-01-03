@@ -8,20 +8,20 @@ namespace StubDb.ModelStorage
 {
     public class EntityCollection
     {
-        Dictionary<string, Dictionary<int, object>> _storage = new Dictionary<string, Dictionary<int, object>>();
+        Dictionary<string, EntityCollectionEntry> _storage = new Dictionary<string, EntityCollectionEntry>();
 
         public void Add(int id, object entity)
         {
             var type = entity.GetType();
 
-            _storage.AddIfNoEntry(type.GetId(), new Dictionary<int, object>());
+            _storage.AddIfNoEntry(type.GetId(), new EntityCollectionEntry());
 
             _storage[type.GetId()].Add(id, entity);
         }
 
         public object GetById(int id, Type type)
         {
-            _storage.AddIfNoEntry(type.GetId(), new Dictionary<int, object>());
+            _storage.AddIfNoEntry(type.GetId(), new EntityCollectionEntry());
 
             var dict = _storage[type.GetId()];
 
@@ -36,18 +36,18 @@ namespace StubDb.ModelStorage
 
         public void Remove(int id, Type type)
         {
-            _storage.AddIfNoEntry(type.GetId(), new Dictionary<int, object>());
+            _storage.AddIfNoEntry(type.GetId(), new EntityCollectionEntry());
 
             _storage[type.GetId()].Remove(id);
         }
 
         public int GetAvailableIdForEntityType(Type entityType)
         {
-            _storage.AddIfNoEntry(entityType.GetId(), new Dictionary<int, object>());
+            _storage.AddIfNoEntry(entityType.GetId(), new EntityCollectionEntry());
 
             var dict = _storage[entityType.GetId()];
 
-            return dict.Keys.Count > 0 ? dict.Keys.Max(x => x) + 1 : 1;
+            return dict.GetNextId();
         }
 
         public List<object> GetEntities(Type entityType)

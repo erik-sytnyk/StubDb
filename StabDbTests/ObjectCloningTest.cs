@@ -13,7 +13,7 @@ namespace StabDbTests
     public delegate void SetProperty(object obj, object value);
 
     [TestClass]
-    public class ObjectCloningTest
+    public class ObjectCloningTest: BaseTest
     {
         #region nested classes
 
@@ -67,17 +67,6 @@ namespace StabDbTests
 
             Console.WriteLine(String.Format("First operation: {0}", firstOperation));
             Console.WriteLine(String.Format("Second operation: {0}", secondOperation));
-        }
-
-        public TimeSpan MeasureOperationTime(Action action)
-        {
-            var startTime = DateTime.Now;
-
-            action.Invoke();
-
-            var endTime = DateTime.Now;
-
-            return endTime - startTime;
         }
     }
 }

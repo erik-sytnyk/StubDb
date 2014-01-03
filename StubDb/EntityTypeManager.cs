@@ -77,56 +77,36 @@ namespace StubDb
             return result;
         }
 
-        public static bool IsCollection(Type type)
+        public static bool IsTypedEnumerable(Type type)
         {
-            if (type == typeof (ICollection<>)) return true;
-
-            var result = type.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>));
-            
-            return result;
+            var genericType = GetEnumerableType(type);
+            return genericType != null;
         }
 
-        public static Type GetCollectionType(Type type)
+        public static Type GetEnumerableType(Type type)
         {
-            return type.GetGenericArguments().Single();
-        }
-
-        public static void AddToCollection(object collection, object newItem)
-        {
-            var type = collection.GetType();
-
-            Check.That(IsCollection(type), "Argument is not a collection");
-
-            var list = collection as IList;
-
-            if (list != null)
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             {
-                list.Add(newItem);
-                return;
+                return type.GetGenericArguments()[0];
             }
 
-            var addMethods = type.GetMethods().Single(x => x.Name == "Add");
-            
-            addMethods.Invoke(collection, new object[] { newItem });
+            foreach (Type intType in type.GetInterfaces())
+            {
+                if (intType.IsGenericType && intType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                {
+                    return intType.GetGenericArguments()[0];
+                }
+            }
+            return null;
         }
 
-        public static void ClearCollection(object collection)
+        //TODO check if clear instead of creating new will improve performance
+        public static IList CreateGenericList(Type listType)
         {
-            var type = collection.GetType();
-
-            Check.That(IsCollection(type), "Argument is not a collection");
-
-            var list = collection as IList;
-
-            if (list != null)
-            {
-                list.Clear();
-                return;
-            }
-
-            var clearMethods = type.GetMethods().Single(x => x.Name == "Clear");
-
-            clearMethods.Invoke(collection, new object[] {});
+            var genericListType = typeof(List<>);
+            var concreteType = genericListType.MakeGenericType(listType);
+            var newList = CreateNew(concreteType);
+            return newList as IList;
         }
 
         public static string GetTypeId(Type type)
