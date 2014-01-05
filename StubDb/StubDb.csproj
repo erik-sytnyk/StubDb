@@ -54,6 +54,8 @@
     <Compile Include="ModelStorage\EntityCollectionEntry.cs" />
     <Compile Include="ModelStorage\EntityConnection.cs" />
     <Compile Include="EntityTypeManager.cs" />
+    <Compile Include="ModelStorage\EntityTypeCollection.cs" />
+    <Compile Include="ModelStorage\EntityTypeInfo.cs" />
     <Compile Include="Persistence\IContextStoragePersistenceProvider.cs" />
     <Compile Include="ModelBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

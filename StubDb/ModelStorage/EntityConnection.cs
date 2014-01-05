@@ -37,11 +37,6 @@ namespace StubDb.ModelStorage
                    && entityConnnection.TypeFirst == this.TypeFirst && entityConnnection.TypeSecond == this.TypeSecond;
         }
 
-        public override int GetHashCode()
-        {
-            return TypeFirst.GetHashCode() + TypeSecond.GetHashCode();
-        }
-
         public static bool IsDefaultTypeStoringOrder(string typeNameFirst, string typeNameSecond)
         {
             return String.Compare(typeNameFirst, typeNameSecond, StringComparison.Ordinal) > 0;

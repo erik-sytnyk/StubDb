@@ -46,20 +46,20 @@ namespace StubDb.Persistence
                 Connections = new List<ConnectionContainer>();
             }
 
-            public DataContainer(ContextStorage storage, List<Type> types)
+            public DataContainer(ContextStorage storage, EntityTypeCollection types)
                 : this()
             {
-                foreach (var entityType in types)
+                foreach (var entityType in types.Values)
                 {
                     var entityContainer = new EntityContainer();
 
                     entityContainer.TypeName = entityType.GetId();
 
-                    var simpleProperties = this.GetSimpleProperties(entityType).ToList();
+                    var simpleProperties = this.GetSimpleProperties(entityType.Type).ToList();
 
                     entityContainer.Properties = this.GetPropertiesString(simpleProperties);
 
-                    var entities = storage.Entities.GetEntities(entityType);
+                    var entities = storage.Entities.GetEntities(entityType.Type);
 
                     foreach (var entity in entities)
                     {
@@ -102,7 +102,7 @@ namespace StubDb.Persistence
                 }
             }
 
-            public void LoadContextStorage(ContextStorage storage, List<Type> types)
+            public void LoadContextStorage(ContextStorage storage, EntityTypeCollection types)
             {
                 storage.Clear();
 
@@ -117,15 +117,15 @@ namespace StubDb.Persistence
                 }
             }
 
-            private void TryLoadContextStorage(ContextStorage storage, List<Type> types)
+            private void TryLoadContextStorage(ContextStorage storage, EntityTypeCollection types)
             {
                 foreach (var entityContainer in this.Entities)
                 {
-                    var type = types.FirstOrDefault(x => x.GetId() == entityContainer.TypeName);
+                    var type = types.GetTypeByName(entityContainer.TypeName);
 
                     if (type != null)
                     {
-                        var simpleProperties = GetSimpleProperties(type).ToList();
+                        var simpleProperties = GetSimpleProperties(type.Type).ToList();
                         var retrievedPropertyNames = entityContainer.Properties.Split(new string[] { SeparatorString }, StringSplitOptions.RemoveEmptyEntries);
 
                         var map = new Dictionary<int, PropertyInfo>();
@@ -144,7 +144,7 @@ namespace StubDb.Persistence
                         {
                             var values = valuesString.Split(new string[] { SeparatorString }, StringSplitOptions.None);
 
-                            var entity = EntityTypeManager.CreateNew(type);
+                            var entity = EntityTypeManager.CreateNew(type.Type);
 
                             int entityId = -1;
 
@@ -166,8 +166,8 @@ namespace StubDb.Persistence
 
                 foreach (var connectionContainer in this.Connections)
                 {
-                    var firstType = types.FirstOrDefault(x => x.GetId() == connectionContainer.FirstType);
-                    var secondType = types.FirstOrDefault(x => x.GetId() == connectionContainer.SecondType);
+                    var firstType = types.GetTypeByName(connectionContainer.FirstType);
+                    var secondType = types.GetTypeByName(connectionContainer.SecondType);
 
                     if (firstType != null && secondType != null)
                     {
@@ -175,7 +175,7 @@ namespace StubDb.Persistence
                         foreach (var connection in connections)
                         {
                             var ids = connection.Split(new string[] { SeparatorConnectionString }, StringSplitOptions.RemoveEmptyEntries);
-                            storage.Connections.AddConnection(firstType, secondType, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]));
+                            storage.Connections.AddConnection(firstType.Type, secondType.Type, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]));
                         }
                     }
                 }
@@ -230,9 +230,9 @@ namespace StubDb.Persistence
 
         #endregion
 
-        public void SaveContext(ContextStorage storage, Dictionary<string, Type> types)
+        public void SaveContext(ContextStorage storage, EntityTypeCollection types)
         {
-            var data = new DataContainer(storage, types.Select(x => x.Value).ToList());
+            var data = new DataContainer(storage, types);
 
             string json = JsonConvert.SerializeObject(data);
 
@@ -249,7 +249,7 @@ namespace StubDb.Persistence
             }
         }
 
-        public void LoadContext(ContextStorage storage, Dictionary<string, Type> types)
+        public void LoadContext(ContextStorage storage, EntityTypeCollection types)
         {
             if (!File.Exists(DbFilePath)) return;
 
@@ -266,7 +266,7 @@ namespace StubDb.Persistence
                     {
                         string json = reader.ReadToEnd();
                         var dataContainer = JsonConvert.DeserializeObject<DataContainer>(json);
-                        dataContainer.LoadContextStorage(storage, types.Values.ToList());
+                        dataContainer.LoadContextStorage(storage, types);
                     }
                     successfulExecution = true;
                 }

@@ -18,14 +18,14 @@ namespace StubDb
         #endregion
 
         internal ContextStorage Storage = new ContextStorage();
-        internal Dictionary<string, Type> Types { get; set; }
         internal List<RequiredDependancy> RequiredDependancies { get; set; }
         protected ModelBuilder ModelBuilder { get; set; }
         public IContextStoragePersistenceProvider PersistenceProvider { get; set; }
+        public EntityTypeCollection Types { get; set; }
 
         public StubContext()
         {
-            Types = new Dictionary<string, Type>();
+            Types = new EntityTypeCollection();
             RequiredDependancies = new List<RequiredDependancy>();
 
             ModelBuilder = new ModelBuilder(this);
@@ -181,7 +181,7 @@ namespace StubDb
 
                 foreach (var connectedId in connectedIds)
                 {
-                    this.Remove(this.Types[requiredDependancy.DependantType], connectedId);
+                    this.Remove(this.Types[requiredDependancy.DependantType].Type, connectedId);
                 }
             }
 
@@ -245,7 +245,7 @@ namespace StubDb
 
         public void RegisterType(Type type)
         {
-            this.Types.Add(type.GetId(), type);
+            this.Types.Add(type);
         }
 
         internal void CheckIsEntityType(Type type)
@@ -389,7 +389,7 @@ namespace StubDb
 
             foreach (var entityType in types)
             {
-                var entities = this.Storage.Entities.GetEntities(entityType);
+                var entities = this.Storage.Entities.GetEntities(entityType.Type);
 
                 result.AppendLine(String.Format("{0}:", entityType.GetId()));
 

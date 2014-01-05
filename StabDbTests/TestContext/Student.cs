@@ -9,5 +9,10 @@ namespace StabDbTests.TestContext
         public string Surname { get; set; }
         public Instructor Instructor { get; set; }
         public List<Course> Courses { get; set; }
+
+        public Student()
+        {
+            Courses = new List<Course>();
+        }
     }
 }

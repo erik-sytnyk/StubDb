@@ -44,14 +44,24 @@ namespace StubDb.ModelStorage
         {
             var result = (List<EntityConnection>)null;
             var isRightOrder = EntityConnection.IsDefaultTypeStoringOrder(entityType, connectionType);
+            var entityTypeId = entityType.GetId();
+            var connectionTypeId = connectionType.GetId();
 
             if (isRightOrder)
             {
-                result = _storage.Where(x => x.TypeFirst == entityType.GetId() && x.TypeSecond == connectionType.GetId() && x.IdFirst == entityId).ToList();
+                result = new List<EntityConnection>();
+                foreach (var x in _storage)
+                {
+                    if (x.IdFirst == entityId && x.TypeFirst == entityTypeId && x.TypeSecond == connectionTypeId)
+                    {
+                        result.Add(x);
+                    }
+                }
+                //result = _storage.Where(x => x.IdFirst == entityId && x.TypeFirst == entityTypeId && x.TypeSecond == connectionTypeId).ToList();
             }
             else
             {
-                result = _storage.Where(x => x.TypeSecond == entityType.GetId() && x.TypeFirst == connectionType.GetId() && x.IdSecond == entityId).ToList();
+                result = _storage.Where(x => x.TypeSecond == entityTypeId && x.TypeFirst == connectionTypeId && x.IdSecond == entityId).ToList();
             }
 
             return result;
