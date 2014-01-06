@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ext.Core.Collections;
 
 namespace StubDb.ModelStorage
 {
@@ -12,7 +13,7 @@ namespace StubDb.ModelStorage
         {
             var newConnection = new EntityConnection(typeFirst.GetId(), typeSecond.GetId(), idFirst, idSecond);
 
-            var existingConnection = _storage.FirstOrDefault(x => x.Equals(newConnection));
+            var existingConnection = _storage.FirstOrDefault(x => x.Equals(newConnection)); //TODO Performance do not check, when seeding initial data
 
             if (existingConnection == null)
             {

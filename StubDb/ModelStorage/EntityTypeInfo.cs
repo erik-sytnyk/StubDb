@@ -8,7 +8,7 @@ namespace StubDb.ModelStorage
 
         public string UniqueName
         {
-            get { return Type.Name; }
+            get { return Type.GetId(); }
         }
 
         public Type Type { get; set; }

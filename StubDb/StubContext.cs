@@ -59,7 +59,7 @@ namespace StubDb
         {
             var result = (StubSet<TEntity>)null;
 
-            var property = EntityTypeManager.GetProperties(this.GetType()).SingleOrDefault(x => EntityTypeManager.IsStubSet(x.PropertyType) && EntityTypeManager.GetEnumerableType(x.PropertyType) == typeof(TEntity));
+            var property = EntityTypeManager.GetProperties(this.GetType()).SingleOrDefault(x => EntityTypeManager.IsStubSet(x.PropertyType) && x.PropertyType.GenericTypeArguments.First() == typeof(TEntity));
 
             if (property != null)
             {
@@ -144,7 +144,10 @@ namespace StubDb
                         }
                     }
 
-                    this.Storage.Connections.RemoveConnectionsFor(entityType, entityId, connectedType);
+                    if (isExistingEntity)
+                    {
+                        this.Storage.Connections.RemoveConnectionsFor(entityType, entityId, connectedType);
+                    }
 
                     foreach (var entityToAdd in entitiesToAdd)
                     {
