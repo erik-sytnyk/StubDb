@@ -9,7 +9,7 @@ namespace StubDb.ModelStorage
     {
         private List<EntityConnection> _storage = new List<EntityConnection>();
 
-        public void AddConnection(Type typeFirst, Type typeSecond, int idFirst, int idSecond)
+        public void AddConnection(EntityTypeInfo typeFirst, Type typeSecond, int idFirst, int idSecond)
         {
             var newConnection = new EntityConnection(typeFirst.GetId(), typeSecond.GetId(), idFirst, idSecond);
 
@@ -21,13 +21,13 @@ namespace StubDb.ModelStorage
             }
         }
 
-        public void RemoveConnectionsFor(Type entityType, int entityId)
+        public void RemoveConnectionsFor(EntityTypeInfo entityType, int entityId)
         {
             _storage.RemoveAll(x => x.TypeFirst == entityType.GetId() && x.IdFirst == entityId);
             _storage.RemoveAll(x => x.TypeSecond == entityType.GetId() && x.IdSecond == entityId);
         }
 
-        public void RemoveConnectionsFor(Type entityType, int entityId, Type connectionType)
+        public void RemoveConnectionsFor(EntityTypeInfo entityType, int entityId, EntityTypeInfo connectionType)
         {
             var isRightOrder = EntityConnection.IsDefaultTypeStoringOrder(entityType, connectionType);
 
@@ -41,7 +41,7 @@ namespace StubDb.ModelStorage
             }
         }
 
-        public List<EntityConnection> GetConnectionsFor(Type entityType, int entityId, Type connectionType)
+        public List<EntityConnection> GetConnectionsFor(EntityTypeInfo entityType, int entityId, EntityTypeInfo connectionType)
         {
             var result = (List<EntityConnection>)null;
             var isRightOrder = EntityConnection.IsDefaultTypeStoringOrder(entityType, connectionType);

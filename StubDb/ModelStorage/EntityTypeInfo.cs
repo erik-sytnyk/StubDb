@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace StubDb.ModelStorage
 {
@@ -16,6 +19,11 @@ namespace StubDb.ModelStorage
         public string GetId()
         {
             return this.UniqueName;
+        }
+
+        public IEnumerable<PropertyInfo> GetProperties()
+        {
+            return EntityTypeManager.GetProperties(this.Type);
         }
     }
 }

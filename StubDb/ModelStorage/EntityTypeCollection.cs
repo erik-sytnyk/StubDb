@@ -19,6 +19,12 @@ namespace StubDb.ModelStorage
             return this.ContainsKey(name) ? this[name] : null;
         }
 
+        public EntityTypeInfo GetType(Type type)
+        {
+            var key = type.GetId();
+            return GetTypeByName(key);
+        }
+
         public new void Add(string name, EntityTypeInfo typeInfo)
         {
             throw new NotImplementedException();

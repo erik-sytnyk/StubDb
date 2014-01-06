@@ -67,8 +67,8 @@ namespace StabDbTests
         [TestMethod]
         public void should_obtain_simple_entity_types()
         {
-            var types = StubContext.GetEntityTypes(typeof (TestStubContext));
-            Assert.AreEqual(types.Count, 4);
+            var context = new TestStubContext();
+            Assert.AreEqual(context.Types.Count, 4);
         }
 
         [TestMethod]

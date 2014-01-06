@@ -55,11 +55,11 @@ namespace StubDb.Persistence
 
                     entityContainer.TypeName = entityType.GetId();
 
-                    var simpleProperties = this.GetSimpleProperties(entityType.Type).ToList();
+                    var simpleProperties = this.GetSimpleProperties(entityType).ToList();
 
                     entityContainer.Properties = this.GetPropertiesString(simpleProperties);
 
-                    var entities = storage.Entities.GetEntities(entityType.Type);
+                    var entities = storage.Entities.GetEntities(entityType);
 
                     foreach (var entity in entities)
                     {
@@ -125,7 +125,7 @@ namespace StubDb.Persistence
 
                     if (type != null)
                     {
-                        var simpleProperties = GetSimpleProperties(type.Type).ToList();
+                        var simpleProperties = GetSimpleProperties(type).ToList();
                         var retrievedPropertyNames = entityContainer.Properties.Split(new string[] { SeparatorString }, StringSplitOptions.RemoveEmptyEntries);
 
                         var map = new Dictionary<int, PropertyInfo>();
@@ -175,7 +175,7 @@ namespace StubDb.Persistence
                         foreach (var connection in connections)
                         {
                             var ids = connection.Split(new string[] { SeparatorConnectionString }, StringSplitOptions.RemoveEmptyEntries);
-                            storage.Connections.AddConnection(firstType.Type, secondType.Type, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]));
+                            storage.Connections.AddConnection(firstType, secondType.Type, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]));
                         }
                     }
                 }
@@ -197,9 +197,9 @@ namespace StubDb.Persistence
                 return String.Join(SeparatorString, properties.Select(x => x.GetValue(entity)));
             }
 
-            private IEnumerable<PropertyInfo> GetSimpleProperties(Type entityType)
+            private IEnumerable<PropertyInfo> GetSimpleProperties(EntityTypeInfo entityType)
             {
-                return EntityTypeManager.GetSimpleWritableProperties(entityType).OrderBy(x => x.Name);
+                return EntityTypeManager.GetSimpleWritableProperties(entityType.Type).OrderBy(x => x.Name);
             }
 
             private string GetPropertiesString(IEnumerable<PropertyInfo> properties)

@@ -39,11 +39,7 @@ namespace StubDb
                 propertyInfo.SetValue(this, stubSet);
             }
 
-            var types = GetEntityTypes(this.GetType());
-            foreach (var type in types)
-            {
-                this.RegisterType(type);
-            }
+            RegisterEntityTypes(this.GetType());
 
             this.ConfigureModel();
 
@@ -82,10 +78,9 @@ namespace StubDb
 
         private void Save(object entity)
         {
-            var entityType = entity.GetType();
-            this.CheckIsEntityType(entityType);
+            var entityType = this.GetEntityType(entity.GetType());
 
-            var properties = EntityTypeManager.GetProperties(entityType);
+            var properties = entityType.GetProperties();
 
             var entityId = EntityTypeManager.GetEntityId(entity);
 
@@ -134,7 +129,7 @@ namespace StubDb
 
                 if (entitiesToAdd.Count > 0)
                 {
-                    var connectedType = entitiesToAdd.First().GetType();
+                    var connectedType = this.GetEntityType(entitiesToAdd.First().GetType());
 
                     if (this.Types.ContainsKey(connectedType.GetId()))
                     {
@@ -162,16 +157,18 @@ namespace StubDb
         public void Remove(object entity)
         {
             var entityType = entity.GetType();
-            this.CheckIsEntityType(entityType);
+            this.GetEntityType(entityType);
 
             var entityId = EntityTypeManager.GetEntityId(entity);
 
             this.Remove(entityType, entityId);
         }
 
-        internal void Remove(Type entityType, int id)
+        internal void Remove(Type type, int id)
         {
-            var requiredDependancies = this.RequiredDependancies.Where(x => x.RequiredType == entityType.GetId()).ToList();
+            var entityType = this.GetEntityType(type);
+
+            var requiredDependancies = this.RequiredDependancies.Where(x => x.RequiredType.UniqueName == entityType.GetId()).ToList();
 
             foreach (var requiredDependancy in requiredDependancies)
             {
@@ -179,12 +176,12 @@ namespace StubDb
 
                 var allConnections = this.Storage.Connections.GetAllConnections().ToList();
 
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType && x.TypeSecond == requiredDependancy.RequiredType && x.IdSecond == id).Select(y => y.IdFirst));
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType && x.TypeSecond == requiredDependancy.DependantType && x.IdFirst == id).Select(y => y.IdSecond));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType.UniqueName && x.TypeSecond == requiredDependancy.RequiredType.UniqueName && x.IdSecond == id).Select(y => y.IdFirst));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType.UniqueName && x.TypeSecond == requiredDependancy.DependantType.UniqueName && x.IdFirst == id).Select(y => y.IdSecond));
 
                 foreach (var connectedId in connectedIds)
                 {
-                    this.Remove(this.Types[requiredDependancy.DependantType].Type, connectedId);
+                    this.Remove(this.Types[requiredDependancy.DependantType.UniqueName].Type, connectedId);
                 }
             }
 
@@ -201,7 +198,9 @@ namespace StubDb
         {
             var list = new List<T>();
 
-            var entities = this.Storage.Entities.GetEntities(typeof(T));
+            var entiytType = GetEntityType(typeof (T));
+
+            var entities = this.Storage.Entities.GetEntities(entiytType);
 
             foreach (var entity in entities)
             {
@@ -228,20 +227,25 @@ namespace StubDb
             get { return this.Storage.IsEmpty; }
         }
 
-        public static List<Type> GetEntityTypes(Type containerType)
+        public void RegisterEntityTypes(Type containerType)
         {
-            var result = new Dictionary<string, Type>();
+            var typesToRegister = new Dictionary<string, Type>();
 
             var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
 
             foreach (var stubSetProperty in stubSetProperties)
             {
                 var typeOfStubSet = stubSetProperty.PropertyType.GetGenericArguments().First();
-                result.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
-                AddEntityTypes(typeOfStubSet, result);
+                typesToRegister.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
+                AddEntityTypes(typeOfStubSet, typesToRegister);
             }
 
-            return result.Values.ToList();
+            this.Types = new EntityTypeCollection();
+
+            foreach (var keyValuePair in typesToRegister)
+            {
+                this.Types.Add(keyValuePair.Value);
+            }
         }
 
         #region Helper functions
@@ -251,9 +255,13 @@ namespace StubDb
             this.Types.Add(type);
         }
 
-        internal void CheckIsEntityType(Type type)
+        internal EntityTypeInfo GetEntityType(Type type)
         {
-            Check.That(Types.ContainsKey(type.GetId()), String.Format("Type: {0} is not one of registered entity types", type.GetId()));
+            var result = Types.GetType(type);
+            
+            Check.NotNull(result, String.Format("Type: {0} is not one of registered entity types", type.GetId()));
+
+            return result;
         }
 
         private static void AddEntityTypes(Type type, Dictionary<string, Type> typesDict)
@@ -284,21 +292,21 @@ namespace StubDb
 
         private void LoadNavigationProperties(int dependenciesLevel, object entity)
         {
+            var entityType = this.GetEntityType(entity.GetType());
             var entityId = EntityTypeManager.GetEntityId(entity);
-            var entityType = entity.GetType();
 
-            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
+            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
             {
                 var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
 
                 if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
                 {
-                    var connectedEntityType = enumerableType;
+                    var connectedEntityType = GetEntityType(enumerableType);
                     var connections = this.Storage.Connections.GetConnectionsFor(entityType, entityId, connectedEntityType);
 
                     if (connections.Count > 0)
                     {
-                        var newList = EntityTypeManager.CreateGenericList(connectedEntityType);
+                        var newList = EntityTypeManager.CreateGenericList(connectedEntityType.Type);
 
                         foreach (var entityConnection in connections)
                         {
@@ -319,7 +327,7 @@ namespace StubDb
                 }
                 else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
                 {
-                    var connectedEntityType = propertyInfo.PropertyType;
+                    var connectedEntityType = this.GetEntityType(propertyInfo.PropertyType);
                     var connections = this.Storage.Connections.GetConnectionsFor(entityType, entityId, connectedEntityType);
 
                     Check.That(connections.Count <= 1, "Multiple connections for one to one relation");
@@ -392,7 +400,7 @@ namespace StubDb
 
             foreach (var entityType in types)
             {
-                var entities = this.Storage.Entities.GetEntities(entityType.Type);
+                var entities = this.Storage.Entities.GetEntities(entityType);
 
                 result.AppendLine(String.Format("{0}:", entityType.GetId()));
 

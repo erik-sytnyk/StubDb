@@ -24,17 +24,17 @@ namespace StubDb
             this.EntityHasRequiredDependancy(typeof(TEntity), dependantType);                
         }
 
-        public void EntityHasRequiredDependancy(Type dependantType, Type requiredDependencyType)
+        public void EntityHasRequiredDependancy(Type dependantType, Type requiredType)
         {
-            Context.CheckIsEntityType(dependantType);
-            Context.CheckIsEntityType(requiredDependencyType);
+            var dependantEntityType = Context.GetEntityType(dependantType);
+            var requiredEntityType = Context.GetEntityType(requiredType);
 
             //TODO check that we do not have required curcular referecnes
 
             var dependancy = new RequiredDependancy()
                 {
-                    DependantType = dependantType.GetId(),
-                    RequiredType = requiredDependencyType.GetId()
+                    DependantType = dependantEntityType,
+                    RequiredType = requiredEntityType
                 };
 
             Context.RequiredDependancies.Add(dependancy);

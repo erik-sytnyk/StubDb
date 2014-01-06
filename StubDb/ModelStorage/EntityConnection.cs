@@ -42,12 +42,12 @@ namespace StubDb.ModelStorage
             return String.Compare(typeNameFirst, typeNameSecond, StringComparison.Ordinal) > 0;
         }
 
-        public static bool IsDefaultTypeStoringOrder(Type typeFirst, Type typeSecond)
+        public static bool IsDefaultTypeStoringOrder(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond)
         {
             return IsDefaultTypeStoringOrder(typeFirst.GetId(), typeSecond.GetId());
         }
 
-        public int GetIdByType(Type connectedEntityType)
+        public int GetIdByType(EntityTypeInfo connectedEntityType)
         {
             if (TypeFirst == connectedEntityType.GetId())
             {

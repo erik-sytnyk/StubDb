@@ -19,7 +19,7 @@ namespace StubDb.ModelStorage
             _storage[type.GetId()].Add(id, entity);
         }
 
-        public object GetById(int id, Type type)
+        public object GetById(int id, EntityTypeInfo type)
         {
             _storage.AddIfNoEntry(type.GetId(), new EntityCollectionEntry());
 
@@ -31,17 +31,17 @@ namespace StubDb.ModelStorage
                 return EntityTypeManager.CloneObject(entity);
             }
 
-            return type.GetDefault();
+            return type.Type.GetDefault();
         }
 
-        public void Remove(int id, Type type)
+        public void Remove(int id, EntityTypeInfo type)
         {
             _storage.AddIfNoEntry(type.GetId(), new EntityCollectionEntry());
 
             _storage[type.GetId()].Remove(id);
         }
 
-        public int GetAvailableIdForEntityType(Type entityType)
+        public int GetAvailableIdForEntityType(EntityTypeInfo entityType)
         {
             _storage.AddIfNoEntry(entityType.GetId(), new EntityCollectionEntry());
 
@@ -50,7 +50,7 @@ namespace StubDb.ModelStorage
             return dict.GetNextId();
         }
 
-        public List<object> GetEntities(Type entityType)
+        public List<object> GetEntities(EntityTypeInfo entityType)
         {
             var result = new List<object>();
 
