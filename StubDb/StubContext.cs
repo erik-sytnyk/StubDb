@@ -237,7 +237,7 @@ namespace StubDb
                 PersistenceProvider.LoadContext(this.Storage, Types);
                 this.CheckDataConsistency();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 this.Storage.Clear();
                 throw;
@@ -411,7 +411,7 @@ namespace StubDb
 
             var types = this.Types.Values.ToList();
 
-            var allConnections = this.Storage.Connections.GetAllConnections();
+            var allConnections = this.Storage.Connections.GetAllConnectionsData();
 
             foreach (var entityType in types)
             {

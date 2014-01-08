@@ -71,26 +71,22 @@ namespace StubDb.Persistence
 
                 }
 
-                //NOTE performance?
-                var groupedConnections =
-                    storage.Connections.GetAllConnections().GroupBy(x => x.TypeFirst + SeparatorString + x.TypeSecond);
+                var connectionsData = storage.Connections.GetAllConnectionsData();
 
-                foreach (var groupedConnection in groupedConnections)
+                foreach (var connectionData in connectionsData)
                 {
                     var connectionContainer = new ConnectionContainer();
 
-                    var typeNames = groupedConnection.Key.Split(new string[] { SeparatorString }, StringSplitOptions.RemoveEmptyEntries);
-
-                    connectionContainer.FirstType = typeNames[0];
-                    connectionContainer.SecondType = typeNames[1];
+                    connectionContainer.FirstType = connectionData.TypeFirst.UniqueName;
+                    connectionContainer.SecondType = connectionData.TypeSecond.UniqueName;
 
                     var connectionsString = new StringBuilder();
 
-                    foreach (var entityConnection in groupedConnection)
+                    foreach (var singleConnection in connectionData)
                     {
-                        connectionsString.Append(entityConnection.IdFirst);
+                        connectionsString.Append(singleConnection.Item1);
                         connectionsString.Append(SeparatorConnectionString);
-                        connectionsString.Append(entityConnection.IdSecond);
+                        connectionsString.Append(singleConnection.Item2);
                         connectionsString.Append(SeparatorString);
                     }
 
@@ -175,8 +171,7 @@ namespace StubDb.Persistence
                         foreach (var connection in connections)
                         {
                             var ids = connection.Split(new string[] { SeparatorConnectionString }, StringSplitOptions.RemoveEmptyEntries);
-                            throw new NotImplementedException();
-                            //storage.Connections.AddConnection(firstType, secondType.Type, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]), false);
+                            storage.Connections.AddConnection(firstType, secondType, String.Empty, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]), false);
                         }
                     }
                 }

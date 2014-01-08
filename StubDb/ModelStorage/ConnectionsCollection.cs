@@ -9,7 +9,18 @@ namespace StubDb.ModelStorage
     public class ConnectionData : List<Tuple<int, int>>
     {
         private Dictionary<int, List<int>> _dictionaryByIdFirst = null;
-        private Dictionary<int, List<int>> _dictionaryByIdSecond = null; 
+        private Dictionary<int, List<int>> _dictionaryByIdSecond = null;
+
+        public EntityTypeInfo TypeFirst { get; set; }
+        public EntityTypeInfo TypeSecond { get; set; }
+        public string ConnectionName { get; set; }
+
+        public ConnectionData(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond, string connectionName)
+        {
+            TypeFirst = typeFirst;
+            TypeSecond = typeSecond;
+            ConnectionName = connectionName;
+        }
 
         public Dictionary<int, List<int>> GroupByIdFirst()
         {
@@ -62,7 +73,7 @@ namespace StubDb.ModelStorage
 
             var key = newConnection.GetUniqueKey();
 
-            _storage.AddIfNoEntry(key, new ConnectionData());
+            _storage.AddIfNoEntry(key, new ConnectionData(newConnection.TypeFirst, newConnection.TypeSecond, newConnection.ConnectionName));
 
             _storage[key].Add(newConnection.IdFirst, newConnection.IdSecond, checkForExistingConnections);
         }
@@ -102,9 +113,17 @@ namespace StubDb.ModelStorage
             return result;
         }
 
-        public IEnumerable<EntityConnection> GetAllConnections()
+        public ConnectionData GetConnectionData(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond, String connectionName)
         {
-            throw new NotImplementedException();
+            var connection = new EntityConnection(typeFirst, typeSecond, connectionName);
+            var key = connection.GetUniqueKey();
+
+            if (_storage.ContainsKey(key))
+            {
+                return _storage[key];
+            }
+
+            return null;
         }
 
         public bool IsEmpty
@@ -115,6 +134,11 @@ namespace StubDb.ModelStorage
         public void Clear()
         {
             _storage.Clear();
+        }
+
+        public List<ConnectionData> GetAllConnectionsData()
+        {
+            return this._storage.Values.ToList();
         }
     }
 }
