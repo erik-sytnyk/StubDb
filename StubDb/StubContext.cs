@@ -15,6 +15,8 @@ namespace StubDb
     {
         #region Nested Classes
 
+        public delegate void SeedDataAction(StubContext context);
+
         #endregion
 
         internal ContextStorage Storage = new ContextStorage();
@@ -22,6 +24,8 @@ namespace StubDb
         protected ModelBuilder ModelBuilder { get; set; }
         public IContextStoragePersistenceProvider PersistenceProvider { get; set; }
         public EntityTypeCollection Types { get; set; }
+
+        internal bool DoDataConsistencyTest = true;
 
         public StubContext()
         {
@@ -146,7 +150,7 @@ namespace StubDb
 
                     foreach (var entityToAdd in entitiesToAdd)
                     {
-                        this.Storage.Connections.AddConnection(entityType, entityToAdd.GetType(), EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(entityToAdd));
+                        this.Storage.Connections.AddConnection(entityType, entityToAdd.GetType(), EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(entityToAdd), DoDataConsistencyTest);
                     }
                 }
             }
@@ -219,7 +223,16 @@ namespace StubDb
 
         public void LoadData()
         {
-            PersistenceProvider.LoadContext(this.Storage, Types);
+            try
+            {
+                PersistenceProvider.LoadContext(this.Storage, Types);
+                this.CheckDataConsistency();
+            }
+            catch (Exception)
+            {
+                this.Storage.Clear();
+                throw;
+            }
         }
 
         public bool IsEmpty
@@ -245,6 +258,29 @@ namespace StubDb
             foreach (var keyValuePair in typesToRegister)
             {
                 this.Types.Add(keyValuePair.Value);
+            }
+        }
+
+        public void SeedData(SeedDataAction seedDataAction)
+        {
+            try
+            {
+                this.DoDataConsistencyTest = false;
+
+                seedDataAction(this);
+
+                this.CheckDataConsistency();
+
+                this.DoDataConsistencyTest = true;
+            }
+            catch (Exception ex)
+            {
+                this.Storage.Clear();
+                throw;
+            }
+            finally
+            {
+                this.DoDataConsistencyTest = true;
             }
         }
 
@@ -476,6 +512,11 @@ namespace StubDb
             }
 
             return result.ToString();
+        }
+
+        private void CheckDataConsistency()
+        {
+            //TODO implement
         }
 
         #endregion

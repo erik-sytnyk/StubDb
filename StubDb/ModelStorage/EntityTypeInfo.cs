@@ -5,6 +5,13 @@ using System.Reflection;
 
 namespace StubDb.ModelStorage
 {
+    public class EntityConnectionInfo
+    {
+        public EntityTypeInfo ConnectedType { get; set; }
+        public string ConnectionName { get; set; } //empty if it is single connection for that type
+        public bool IsMultipleConnection { get; set; }
+    }
+
     public class EntityTypeInfo
     {
         public int Id { get; set; }
@@ -19,6 +26,13 @@ namespace StubDb.ModelStorage
         public string GetId()
         {
             return this.UniqueName;
+        }
+
+        public List<EntityTypeInfo> Connections { get; set; }
+
+        public EntityTypeInfo()
+        {
+            Connections = new List<EntityTypeInfo>();
         }
 
         public IEnumerable<PropertyInfo> GetProperties()

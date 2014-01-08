@@ -175,11 +175,10 @@ namespace StubDb.Persistence
                         foreach (var connection in connections)
                         {
                             var ids = connection.Split(new string[] { SeparatorConnectionString }, StringSplitOptions.RemoveEmptyEntries);
-                            storage.Connections.AddConnection(firstType, secondType.Type, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]));
+                            storage.Connections.AddConnection(firstType, secondType.Type, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]), false);
                         }
                     }
                 }
-
             }
 
             private object ConvertToSimpleType(Type type, string value)

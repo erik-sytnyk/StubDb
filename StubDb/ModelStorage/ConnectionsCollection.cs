@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ext.Core;
 using Ext.Core.Collections;
 
 namespace StubDb.ModelStorage
@@ -9,16 +10,17 @@ namespace StubDb.ModelStorage
     {
         private List<EntityConnection> _storage = new List<EntityConnection>();
 
-        public void AddConnection(EntityTypeInfo typeFirst, Type typeSecond, int idFirst, int idSecond)
+        public void AddConnection(EntityTypeInfo typeFirst, Type typeSecond, int idFirst, int idSecond, bool checkForExistingConnections)
         {
             var newConnection = new EntityConnection(typeFirst.GetId(), typeSecond.GetId(), idFirst, idSecond);
 
-            var existingConnection = _storage.FirstOrDefault(x => x.Equals(newConnection)); //TODO Performance do not check, when seeding initial data
-
-            if (existingConnection == null)
+            if (checkForExistingConnections)
             {
-                _storage.Add(newConnection);
+                var existingConnection = _storage.FirstOrDefault(x => x.Equals(newConnection));
+                Check.That(existingConnection == null, "Connection exists");
             }
+
+            _storage.Add(newConnection);
         }
 
         public void RemoveConnectionsFor(EntityTypeInfo entityType, int entityId)
@@ -66,7 +68,7 @@ namespace StubDb.ModelStorage
             }
 
             return result;
-        } 
+        }
 
         public IEnumerable<EntityConnection> GetAllConnections()
         {

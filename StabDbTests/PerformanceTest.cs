@@ -14,15 +14,17 @@ namespace StabDbTests
         public void measure_init_time()
         {
             var context = new TestStubContext();
-            var initTime = base.MeasureOperationTime(() => this.InitContext(context));
+            var initTime = base.MeasureOperationTime(() => context.SeedData(InitContext));
             var queryTime = base.MeasureOperationTime(() => context.Students.Query());
             Console.WriteLine(initTime);
             Console.WriteLine(queryTime);
         }
 
-        public void InitContext(TestStubContext context)
+        public void InitContext(StubContext inputContext)
         {
             var counter = 6000;
+
+            var context = inputContext as TestStubContext;
 
             var courses = new List<Course>();
             var students = new List<Student>();
