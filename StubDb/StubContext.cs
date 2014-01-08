@@ -150,12 +150,12 @@ namespace StubDb
 
                     if (isExistingEntity)
                     {
-                        this.Storage.Connections.RemoveConnectionsFor(entityType, entityId, connectedType);
+                        this.Storage.Connections.RemoveConnectionsFor(entityType, connectedType, string.Empty, entityId);
                     }
 
                     foreach (var entityToAdd in entitiesToAdd)
                     {
-                        this.Storage.Connections.AddConnection(entityType, entityToAdd.GetType(), EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(entityToAdd), DoDataConsistencyTest);
+                        this.Storage.Connections.AddConnection(entityType, this.GetEntityType(entityToAdd.GetType()), string.Empty, EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(entityToAdd), DoDataConsistencyTest);
                     }
                 }
             }
@@ -179,22 +179,26 @@ namespace StubDb
 
             var requiredDependancies = this.RequiredDependancies.Where(x => x.RequiredType.UniqueName == entityType.GetId()).ToList();
 
-            foreach (var requiredDependancy in requiredDependancies)
+//            foreach (var requiredDependancy in requiredDependancies)
+//            {
+//                var connectedIds = new List<int>();
+//
+//                var allConnections = this.Storage.Connections.GetAllConnections().ToList();
+//
+//                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType.UniqueName && x.TypeSecond == requiredDependancy.RequiredType.UniqueName && x.IdSecond == id).Select(y => y.IdFirst));
+//                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType.UniqueName && x.TypeSecond == requiredDependancy.DependantType.UniqueName && x.IdFirst == id).Select(y => y.IdSecond));
+//
+//                foreach (var connectedId in connectedIds)
+//                {
+//                    this.Remove(this.Types[requiredDependancy.DependantType.UniqueName].Type, connectedId);
+//                }
+//            }
+
+            foreach (var connection in entityType.Connections)
             {
-                var connectedIds = new List<int>();
-
-                var allConnections = this.Storage.Connections.GetAllConnections().ToList();
-
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType.UniqueName && x.TypeSecond == requiredDependancy.RequiredType.UniqueName && x.IdSecond == id).Select(y => y.IdFirst));
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType.UniqueName && x.TypeSecond == requiredDependancy.DependantType.UniqueName && x.IdFirst == id).Select(y => y.IdSecond));
-
-                foreach (var connectedId in connectedIds)
-                {
-                    this.Remove(this.Types[requiredDependancy.DependantType.UniqueName].Type, connectedId);
-                }
+                this.Storage.Connections.RemoveConnectionsFor(entityType, connection.ConnectedType, connection.ConnectionName, id);
             }
 
-            this.Storage.Connections.RemoveConnectionsFor(entityType, id);
             this.Storage.Entities.Remove(id, entityType);
         }
 
@@ -317,17 +321,15 @@ namespace StubDb
                 if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
                 {
                     var connectedEntityType = GetEntityType(enumerableType);
-                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, entityId, connectedEntityType);
+                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, string.Empty, entityId);
 
                     if (connections.Count > 0)
                     {
                         var newList = EntityTypeManager.CreateGenericList(connectedEntityType.Type);
 
-                        foreach (var entityConnection in connections)
+                        foreach (var connectionId in connections)
                         {
-                            var connectedId = entityConnection.GetIdByType(connectedEntityType);
-
-                            var entityToAdd = this.Storage.Entities.GetById(connectedId, connectedEntityType);
+                            var entityToAdd = this.Storage.Entities.GetById(connectionId, connectedEntityType);
 
                             if (dependenciesLevel > 0)
                             {
@@ -343,15 +345,13 @@ namespace StubDb
                 else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
                 {
                     var connectedEntityType = this.GetEntityType(propertyInfo.PropertyType);
-                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, entityId, connectedEntityType);
+                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, string.Empty, entityId);
 
                     Check.That(connections.Count <= 1, "Multiple connections for one to one relation");
 
                     if (connections.Count == 1)
                     {
-                        var entityConnection = connections.Single();
-
-                        var connectedId = entityConnection.GetIdByType(connectedEntityType);
+                        var connectedId = connections.Single();
 
                         var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedEntityType);
 
@@ -437,21 +437,21 @@ namespace StubDb
 
                 var connectionsGroupedByType = new Dictionary<string, List<Tuple<int, int>>>();
 
-                foreach (var entityConnection in allConnections.ToList())
-                {
-                    if (entityConnection.TypeFirst == entityType.GetId() || entityConnection.TypeSecond == entityType.GetId())
-                    {
-                        var firstIsEntity = entityConnection.TypeFirst == entityType.GetId();
-
-                        var connectedType = firstIsEntity ? entityConnection.TypeSecond : entityConnection.TypeFirst;
-                        var entityId = firstIsEntity ? entityConnection.IdFirst : entityConnection.IdSecond;
-                        var connectedEntityId = firstIsEntity ? entityConnection.IdSecond : entityConnection.IdFirst;
-
-                        connectionsGroupedByType.AddIfNoEntry(connectedType, new List<Tuple<int, int>>());
-
-                        connectionsGroupedByType[connectedType].Add(new Tuple<int, int>(entityId, connectedEntityId));
-                    }
-                }
+//                foreach (var entityConnection in allConnections.ToList())
+//                {
+//                    if (entityConnection.TypeFirst.Equals(entityType) || entityConnection.TypeSecond.Equals(entityType))
+//                    {
+//                        var firstIsEntity = entityConnection.TypeFirst.Equals(entityType);
+//
+//                        var connectedType = firstIsEntity ? entityConnection.TypeSecond : entityConnection.TypeFirst;
+//                        var entityId = firstIsEntity ? entityConnection.IdFirst : entityConnection.IdSecond;
+//                        var connectedEntityId = firstIsEntity ? entityConnection.IdSecond : entityConnection.IdFirst;
+//
+//                        connectionsGroupedByType.AddIfNoEntry(connectedType, new List<Tuple<int, int>>());
+//
+//                        connectionsGroupedByType[connectedType].Add(new Tuple<int, int>(entityId, connectedEntityId));
+//                    }
+//                }
 
                 foreach (var connectedType in connectionsGroupedByType)
                 {

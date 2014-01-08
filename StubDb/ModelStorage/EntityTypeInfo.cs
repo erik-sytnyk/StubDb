@@ -28,16 +28,25 @@ namespace StubDb.ModelStorage
             return this.UniqueName;
         }
 
-        public List<EntityTypeInfo> Connections { get; set; }
+        public List<EntityConnectionInfo> Connections { get; set; }
 
         public EntityTypeInfo()
         {
-            Connections = new List<EntityTypeInfo>();
+            Connections = new List<EntityConnectionInfo>();
         }
 
         public IEnumerable<PropertyInfo> GetProperties()
         {
             return EntityTypeManager.GetProperties(this.Type);
+        }
+
+        public override bool Equals(object obj)
+        {
+            var entityTypeInfo = obj as EntityTypeInfo;
+
+            if (entityTypeInfo == null) return false;
+
+            return entityTypeInfo.UniqueName == this.UniqueName;
         }
     }
 }

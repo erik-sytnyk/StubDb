@@ -4,12 +4,13 @@ namespace StubDb.ModelStorage
 {
     public class EntityConnection
     {
-        public string TypeFirst { get; set; }
-        public string TypeSecond { get; set; }
+        public EntityTypeInfo TypeFirst { get; set; }
+        public EntityTypeInfo TypeSecond { get; set; }
+        public string ConnectionName { get; set; }
         public int IdFirst { get; set; }
         public int IdSecond { get; set; }
 
-        public EntityConnection(string type1, string type2, int id1, int id2)
+        public EntityConnection(EntityTypeInfo type1, EntityTypeInfo type2, string name, int id1, int id2)
         {
             if (IsDefaultTypeStoringOrder(type1, type2))
             {
@@ -25,16 +26,11 @@ namespace StubDb.ModelStorage
                 IdFirst = id2;
                 IdSecond = id1;
             }
+            ConnectionName = name;
         }
 
-        public override bool Equals(object obj)
+        public EntityConnection(EntityTypeInfo type1, EntityTypeInfo type2, string name): this(type1, type2, name, 0, 0)
         {
-            var entityConnnection = obj as EntityConnection;
-
-            if (entityConnnection == null) return false;
-
-            return entityConnnection.IdFirst == this.IdFirst && entityConnnection.IdSecond == this.IdSecond
-                   && entityConnnection.TypeFirst == this.TypeFirst && entityConnnection.TypeSecond == this.TypeSecond;
         }
 
         public static bool IsDefaultTypeStoringOrder(string typeNameFirst, string typeNameSecond)
@@ -47,13 +43,18 @@ namespace StubDb.ModelStorage
             return IsDefaultTypeStoringOrder(typeFirst.GetId(), typeSecond.GetId());
         }
 
+        public string GetUniqueKey()
+        {
+            return String.Format("{0}{1}{2}", TypeFirst.UniqueName, TypeSecond.UniqueName, ConnectionName);
+        }
+
         public int GetIdByType(EntityTypeInfo connectedEntityType)
         {
-            if (TypeFirst == connectedEntityType.GetId())
+            if (TypeFirst.UniqueName == connectedEntityType.UniqueName)
             {
                 return IdFirst;
             }
-            else if (TypeSecond == connectedEntityType.GetId())
+            else if (TypeSecond.UniqueName == connectedEntityType.UniqueName)
             {
                 return IdSecond;
             }
