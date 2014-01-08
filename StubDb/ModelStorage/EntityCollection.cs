@@ -19,6 +19,15 @@ namespace StubDb.ModelStorage
             _storage[type.GetId()].Add(id, entity);
         }
 
+        public void Update(int id, object entity)
+        {
+            var typeId = entity.GetType().GetId();
+
+            Check.That(_storage[typeId].ContainsKey(id), "Trying to update entity, which is not in context");
+
+            _storage[typeId][id] = entity;
+        }
+
         public object GetById(int id, EntityTypeInfo type)
         {
             _storage.AddIfNoEntry(type.GetId(), new EntityCollectionEntry());

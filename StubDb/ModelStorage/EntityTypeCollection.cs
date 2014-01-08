@@ -9,8 +9,12 @@ namespace StubDb.ModelStorage
         public void Add(Type type)
         {
             var entityTypeInfo = new EntityTypeInfo();
+
             entityTypeInfo.Type = type;
             entityTypeInfo.Id = this.GetNextAvailableId();
+
+            this.LoadConnections(entityTypeInfo);
+            
             base.Add(type.Name, entityTypeInfo);
         }
 
@@ -30,6 +34,8 @@ namespace StubDb.ModelStorage
             throw new NotImplementedException();
         }
 
+        #region Helper methods
+
         private int GetNextAvailableId()
         {
             if (this.Values.Count == 0)
@@ -38,5 +44,12 @@ namespace StubDb.ModelStorage
             }
             return this.Values.Select(x => x.Id).Max(x => x) + 1;
         }
+
+        private void LoadConnections(EntityTypeInfo entityTypeInfo)
+        {
+
+        }
+
+        #endregion
     }
 }

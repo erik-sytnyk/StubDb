@@ -99,7 +99,12 @@ namespace StubDb
 
                 this.Storage.Entities.Add(newId, entity);
             }
+            else
+            {
+                this.Storage.Entities.Update(entityId, entity);
+            }
 
+            //load connections
             foreach (var propertyInfo in properties)
             {
                 var entitiesToAdd = new List<object>();
@@ -240,27 +245,6 @@ namespace StubDb
             get { return this.Storage.IsEmpty; }
         }
 
-        public void RegisterEntityTypes(Type containerType)
-        {
-            var typesToRegister = new Dictionary<string, Type>();
-
-            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
-
-            foreach (var stubSetProperty in stubSetProperties)
-            {
-                var typeOfStubSet = stubSetProperty.PropertyType.GetGenericArguments().First();
-                typesToRegister.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
-                AddEntityTypes(typeOfStubSet, typesToRegister);
-            }
-
-            this.Types = new EntityTypeCollection();
-
-            foreach (var keyValuePair in typesToRegister)
-            {
-                this.Types.Add(keyValuePair.Value);
-            }
-        }
-
         public void SeedData(SeedDataAction seedDataAction)
         {
             try
@@ -285,11 +269,6 @@ namespace StubDb
         }
 
         #region Helper functions
-
-        public void RegisterType(Type type)
-        {
-            this.Types.Add(type);
-        }
 
         internal EntityTypeInfo GetEntityType(Type type)
         {
@@ -517,6 +496,27 @@ namespace StubDb
         private void CheckDataConsistency()
         {
             //TODO implement
+        }
+
+        public void RegisterEntityTypes(Type containerType)
+        {
+            var typesToRegister = new Dictionary<string, Type>();
+
+            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
+
+            foreach (var stubSetProperty in stubSetProperties)
+            {
+                var typeOfStubSet = stubSetProperty.PropertyType.GetGenericArguments().First();
+                typesToRegister.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
+                AddEntityTypes(typeOfStubSet, typesToRegister);
+            }
+
+            this.Types = new EntityTypeCollection();
+
+            foreach (var keyValuePair in typesToRegister)
+            {
+                this.Types.Add(keyValuePair.Value);
+            }
         }
 
         #endregion

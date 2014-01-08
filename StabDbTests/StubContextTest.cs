@@ -160,6 +160,38 @@ namespace StabDbTests
             Assert.AreNotEqual(math.Instructor.Courses.Count, 0);
         }
 
+        [TestMethod]
+        public void should_update_entity()
+        {
+            var context = this.InitializeTestContext(new TestStubContext());
+
+            var math = context.Courses.Query(1).Single(x => x.Name == "Math");
+
+            math.Name = "Math and Algebra";
+
+            context.Update(math);
+
+            var mathFromContext = context.Courses.Query(1).Single(x => x.Name == "Math and Algebra");
+
+            Assert.AreSame(mathFromContext.Name, "Math and Algebra");
+        }
+
+        [TestMethod]
+        public void should_add_and_get_by_new_id()
+        {
+            var context = new TestStubContext();
+
+            var student = new Student() {FirstName = "Yegor", Surname = "Sytnyk"};
+            context.Students.Add(student);
+
+            var studentId = student.Id;
+
+            student = context.Students.Query().Single(x => x.Id == studentId);
+
+            Assert.IsNotNull(student);
+            Assert.AreEqual(student.FirstName, "Yegor");
+        }
+
         private TestStubContext InitializeTestContext(TestStubContext context)
         {
             var math = new Course() { Name = "Math" };
