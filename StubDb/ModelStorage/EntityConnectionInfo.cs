@@ -6,5 +6,10 @@
         public string PropertyName { get; set; } 
         public bool IsMultipleConnection { get; set; }
         public bool IsNamedConnection { get; set; }
+
+        public string ConnectionName
+        {
+            get { return IsNamedConnection ? PropertyName : string.Empty; }
+        }
     }
 }
