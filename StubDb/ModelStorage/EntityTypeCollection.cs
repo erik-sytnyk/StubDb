@@ -40,7 +40,7 @@ namespace StubDb.ModelStorage
 
             foreach (var propertyInfo in entityTypeInfo.GetProperties())
             {
-                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+                var enumerableType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
 
                 var connectionInfo = (EntityConnectionInfo)null;
 

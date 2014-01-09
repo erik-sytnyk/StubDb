@@ -77,29 +77,35 @@ namespace StubDb
             return result;
         }
 
-        public static bool IsTypedEnumerable(Type type)
+        public static bool IsEntityTypedEnumerable(Type type)
         {
-            var genericType = GetEnumerableType(type);
+            var genericType = GetEnumerableEntityType(type);
             return genericType != null;
         }
 
-        public static Type GetEnumerableType(Type type)
+        public static Type GetEnumerableEntityType(Type type)
         {
-            if (type == typeof (string)) return null;
+            var result = (Type) null;
 
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             {
-                return type.GetGenericArguments()[0];
+                result = type.GetGenericArguments()[0];
             }
 
             foreach (Type intType in type.GetInterfaces())
             {
                 if (intType.IsGenericType && intType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
-                    return intType.GetGenericArguments()[0];
+                    result = intType.GetGenericArguments()[0];
                 }
             }
-            return null;
+
+            if (result != null && IsSimpleType(result))
+            {
+                result = null;
+            }
+
+            return result;
         }
 
         //TODO check if clear instead of creating new will improve performance

@@ -291,7 +291,7 @@ namespace StubDb
             {
                 var entityType = (Type)null;
 
-                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+                var enumerableType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
 
                 if (enumerableType != null && !EntityTypeManager.IsSimpleType(enumerableType))
                 {
@@ -379,7 +379,7 @@ namespace StubDb
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
             {
-                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+                var enumerableType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
 
                 if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
                 {
