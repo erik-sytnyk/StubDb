@@ -179,20 +179,21 @@ namespace StubDb
 
             var requiredDependancies = this.RequiredDependancies.Where(x => x.RequiredType.UniqueName == entityType.GetId()).ToList();
 
-//            foreach (var requiredDependancy in requiredDependancies)
-//            {
-//                var connectedIds = new List<int>();
-//
-//                var allConnections = this.Storage.Connections.GetAllConnections().ToList();
-//
-//                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType.UniqueName && x.TypeSecond == requiredDependancy.RequiredType.UniqueName && x.IdSecond == id).Select(y => y.IdFirst));
-//                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType.UniqueName && x.TypeSecond == requiredDependancy.DependantType.UniqueName && x.IdFirst == id).Select(y => y.IdSecond));
-//
-//                foreach (var connectedId in connectedIds)
-//                {
-//                    this.Remove(this.Types[requiredDependancy.DependantType.UniqueName].Type, connectedId);
-//                }
-//            }
+            foreach (var requiredDependancy in requiredDependancies)
+            {
+                var connectedIds = new List<int>();
+
+                var allConnections = this.Storage.Connections.GetAllConnectionsData();
+
+                //TODO performance, readability
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst.Equals(requiredDependancy.DependantType) && x.TypeSecond.Equals(requiredDependancy.RequiredType)).SelectMany(x => x).Where(x => x.Item2 == id).Select(x => x.Item1));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst.Equals(requiredDependancy.RequiredType) && x.TypeSecond.Equals(requiredDependancy.DependantType)).SelectMany(x => x).Where(x => x.Item1 == id).Select(x => x.Item2));
+
+                foreach (var connectedId in connectedIds)
+                {
+                    this.Remove(this.Types[requiredDependancy.DependantType.UniqueName].Type, connectedId);
+                }
+            }
 
             foreach (var connection in entityType.Connections)
             {
