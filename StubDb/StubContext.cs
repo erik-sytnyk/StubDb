@@ -414,8 +414,6 @@ namespace StubDb
 
             var types = this.Types.Values.ToList();
 
-            var allConnections = this.Storage.Connections.GetAllConnectionsData();
-
             foreach (var entityType in types)
             {
                 var entities = this.Storage.Entities.GetEntities(entityType);
@@ -438,23 +436,28 @@ namespace StubDb
                 result.Append(GlobalConstants.SpecialSymbols.Tab);
                 result.AppendLine("Connections:");
 
+                var connectionsData = this.Storage.Connections.GetAllConnectionsData();
                 var connectionsGroupedByType = new Dictionary<string, List<Tuple<int, int>>>();
 
-                //                foreach (var entityConnection in allConnections.ToList())
-                //                {
-                //                    if (entityConnection.TypeFirst.Equals(entityType) || entityConnection.TypeSecond.Equals(entityType))
-                //                    {
-                //                        var firstIsEntity = entityConnection.TypeFirst.Equals(entityType);
-                //
-                //                        var connectedType = firstIsEntity ? entityConnection.TypeSecond : entityConnection.TypeFirst;
-                //                        var entityId = firstIsEntity ? entityConnection.IdFirst : entityConnection.IdSecond;
-                //                        var connectedEntityId = firstIsEntity ? entityConnection.IdSecond : entityConnection.IdFirst;
-                //
-                //                        connectionsGroupedByType.AddIfNoEntry(connectedType, new List<Tuple<int, int>>());
-                //
-                //                        connectionsGroupedByType[connectedType].Add(new Tuple<int, int>(entityId, connectedEntityId));
-                //                    }
-                //                }
+                foreach (var entityConnection in connectionsData.ToList())
+                {
+                    if (entityConnection.TypeFirst.Equals(entityType) || entityConnection.TypeSecond.Equals(entityType))
+                    {
+                        var firstIsEntity = entityConnection.TypeFirst.Equals(entityType);
+
+                        var connectedType = firstIsEntity ? entityConnection.TypeSecond : entityConnection.TypeFirst;
+                        foreach (var connection in entityConnection)
+                        {
+                            var entityId = firstIsEntity ? connection.Item1 : connection.Item2;
+                            var connectedEntityId = firstIsEntity ? connection.Item2 : connection.Item1;
+
+                            connectionsGroupedByType.AddIfNoEntry(connectedType.UniqueName, new List<Tuple<int, int>>());
+
+                            connectionsGroupedByType[connectedType.UniqueName].Add(new Tuple<int, int>(entityId, connectedEntityId));
+                        }
+
+                    }
+                }
 
                 foreach (var connectedType in connectionsGroupedByType)
                 {

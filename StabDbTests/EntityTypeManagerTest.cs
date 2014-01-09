@@ -54,12 +54,12 @@ namespace StabDbTests
         [TestMethod]
         public void should_check_if_is_enumerable_t()
         {
-            Assert.IsTrue(EntityTypeManager.IsTypedEnumerable(typeof(IEnumerable<int>)));
-            Assert.IsTrue(EntityTypeManager.IsTypedEnumerable(new List<string>().GetType()));
-            Assert.IsTrue(EntityTypeManager.IsTypedEnumerable((new int[0]).GetType()));
-            Assert.IsTrue(EntityTypeManager.IsTypedEnumerable(typeof(MyCollection)));
-            Assert.IsTrue(EntityTypeManager.IsTypedEnumerable(typeof(MyOtherCollection)));
-            Assert.IsFalse(EntityTypeManager.IsTypedEnumerable((new ArrayList()).GetType()));
+            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(typeof(IEnumerable<int>)));
+            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(new List<string>().GetType()));
+            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable((new int[0]).GetType()));
+            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(typeof(MyCollection)));
+            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(typeof(MyOtherCollection)));
+            Assert.IsFalse(EntityTypeManager.IsEntityTypedEnumerable((new ArrayList()).GetType()));
         }
     }
 }
