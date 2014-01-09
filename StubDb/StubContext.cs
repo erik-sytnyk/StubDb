@@ -197,7 +197,7 @@ namespace StubDb
 
             foreach (var connection in entityType.Connections)
             {
-                this.Storage.Connections.RemoveConnectionsFor(entityType, connection.ConnectedType, connection.ConnectionName, id);
+                this.Storage.Connections.RemoveConnectionsFor(entityType, connection.ConnectedType, connection.PropertyName, id);
             }
 
             this.Storage.Entities.Remove(id, entityType);
@@ -317,11 +317,13 @@ namespace StubDb
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
             {
-                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+                var connection = entityType.Connections.SingleOrDefault(x => x.PropertyName == propertyInfo.Name);
 
-                if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
+                if (connection == null) continue;
+
+                if (connection.IsMultipleConnection)
                 {
-                    var connectedEntityType = GetEntityType(enumerableType);
+                    var connectedEntityType = connection.ConnectedType;
                     var connections = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, string.Empty, entityId);
 
                     if (connections.Count > 0)
@@ -343,9 +345,9 @@ namespace StubDb
                         propertyInfo.SetValue(entity, newList);
                     }
                 }
-                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
+                else
                 {
-                    var connectedEntityType = this.GetEntityType(propertyInfo.PropertyType);
+                    var connectedEntityType = connection.ConnectedType;
                     var connections = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, string.Empty, entityId);
 
                     Check.That(connections.Count <= 1, "Multiple connections for one to one relation");
@@ -517,6 +519,12 @@ namespace StubDb
             foreach (var keyValuePair in typesToRegister)
             {
                 this.Types.Add(keyValuePair.Value);
+            }
+
+            foreach (var type in typesToRegister.Values)
+            {
+                var typeInfo = this.Types.GetType(type);
+                this.Types.LoadConnections(typeInfo);
             }
         }
 

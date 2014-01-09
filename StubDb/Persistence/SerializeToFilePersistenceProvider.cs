@@ -79,6 +79,7 @@ namespace StubDb.Persistence
 
                     connectionContainer.FirstType = connectionData.TypeFirst.UniqueName;
                     connectionContainer.SecondType = connectionData.TypeSecond.UniqueName;
+                    connectionContainer.ConnectionName = connectionData.ConnectionName;
 
                     var connectionsString = new StringBuilder();
 
@@ -171,7 +172,7 @@ namespace StubDb.Persistence
                         foreach (var connection in connections)
                         {
                             var ids = connection.Split(new string[] { SeparatorConnectionString }, StringSplitOptions.RemoveEmptyEntries);
-                            storage.Connections.AddConnection(firstType, secondType, String.Empty, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]), false);
+                            storage.Connections.AddConnection(firstType, secondType, connectionContainer.ConnectionName, Convert.ToInt32(ids[0]), Convert.ToInt32(ids[1]), false);
                         }
                     }
                 }
@@ -220,6 +221,7 @@ namespace StubDb.Persistence
         {
             public string FirstType { get; set; }
             public string SecondType { get; set; }
+            public string ConnectionName { get; set; }
             public string ConnectionsString { get; set; }
         }
 

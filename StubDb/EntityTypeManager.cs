@@ -85,6 +85,8 @@ namespace StubDb
 
         public static Type GetEnumerableType(Type type)
         {
+            if (type == typeof (string)) return null;
+
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             {
                 return type.GetGenericArguments()[0];

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ext.Core.Collections;
 
 namespace StubDb.ModelStorage
 {
-    public class EntityTypeCollection: Dictionary<string, EntityTypeInfo>
+    public class EntityTypeCollection : Dictionary<string, EntityTypeInfo>
     {
         public void Add(Type type)
         {
@@ -13,8 +14,6 @@ namespace StubDb.ModelStorage
             entityTypeInfo.Type = type;
             entityTypeInfo.Id = this.GetNextAvailableId();
 
-            this.LoadConnections(entityTypeInfo);
-            
             base.Add(type.Name, entityTypeInfo);
         }
 
@@ -34,6 +33,55 @@ namespace StubDb.ModelStorage
             throw new NotImplementedException();
         }
 
+        public void LoadConnections(EntityTypeInfo entityTypeInfo)
+        {
+            var connectionsCounterByType = new Dictionary<string, int>();
+            var connectionInfoList = new List<EntityConnectionInfo>();
+
+            foreach (var propertyInfo in entityTypeInfo.GetProperties())
+            {
+                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
+
+                var connectionInfo = (EntityConnectionInfo)null;
+
+                if (enumerableType != null)
+                {
+                    connectionInfo = new EntityConnectionInfo();
+                    connectionInfo.IsMultipleConnection = true;
+                    connectionInfo.ConnectedType = this.GetType(enumerableType);
+                    connectionInfo.PropertyName = propertyInfo.Name;
+                }
+                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
+                {
+                    connectionInfo = new EntityConnectionInfo();
+                    connectionInfo.IsMultipleConnection = false;
+                    connectionInfo.ConnectedType = this.GetType(propertyInfo.PropertyType);
+                    connectionInfo.PropertyName = propertyInfo.Name;
+                }
+
+                if (connectionInfo != null)
+                {
+                    var key = connectionInfo.ConnectedType.UniqueName;
+                    connectionsCounterByType.AddIfNoEntry(key, 0);
+                    connectionsCounterByType[key]++;
+                    connectionInfoList.Add(connectionInfo);
+                }
+            }
+
+            //TODO check that type with named connection is not connected to referencing type
+            var typesWithNamedConnections = connectionsCounterByType.Where(x => x.Value > 1).Select(x => x.Key).ToList();
+
+            foreach (var entityConnectionInfo in connectionInfoList)
+            {
+                if (typesWithNamedConnections.Contains(entityConnectionInfo.ConnectedType.UniqueName))
+                {
+                    entityConnectionInfo.IsNamedConnection = true;
+                }
+            }
+
+            entityTypeInfo.Connections = connectionInfoList;
+        }
+
         #region Helper methods
 
         private int GetNextAvailableId()
@@ -43,11 +91,6 @@ namespace StubDb.ModelStorage
                 return 1;
             }
             return this.Values.Select(x => x.Id).Max(x => x) + 1;
-        }
-
-        private void LoadConnections(EntityTypeInfo entityTypeInfo)
-        {
-
         }
 
         #endregion
