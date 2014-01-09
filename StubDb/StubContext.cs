@@ -91,18 +91,23 @@ namespace StubDb
 
             var existingEntity = this.Storage.Entities.GetById(entityId, entityType);
             var isExistingEntity = existingEntity != null;
-
             if (!isExistingEntity)
             {
                 var newId = this.Storage.Entities.GetAvailableIdForEntityType(entityType);
 
                 EntityTypeManager.SetEntityId(entity, newId);
 
-                this.Storage.Entities.Add(newId, entity);
+                entityId = newId;
+            }
+
+            var entityToSave = EntityTypeManager.CloneObject(entity);
+            if (!isExistingEntity)
+            {
+                this.Storage.Entities.Add(entityId, entityToSave);
             }
             else
             {
-                this.Storage.Entities.Update(entityId, entity);
+                this.Storage.Entities.Update(entityId, entityToSave);
             }
 
             //load connections
@@ -112,7 +117,7 @@ namespace StubDb
 
                 if (connection == null) continue;
 
-                var entitiesToAdd = new List<object>();
+                var connectedEntities = new List<object>();
 
                 if (connection.IsMultipleConnection)
                 {
@@ -126,26 +131,26 @@ namespace StubDb
 
                     foreach (var item in collection)
                     {
-                        entitiesToAdd.Add(item);
+                        connectedEntities.Add(item);
                     }
                 }
                 else
                 {
-                    var entityToAdd = propertyInfo.GetValue(entity);
+                    var connectedEntity = propertyInfo.GetValue(entity);
 
-                    if (entityToAdd != null)
+                    if (connectedEntity != null)
                     {
-                        entitiesToAdd.Add(entityToAdd);
+                        connectedEntities.Add(connectedEntity);
                     }
                 }
 
-                if (entitiesToAdd.Count > 0)
+                if (connectedEntities.Count > 0)
                 {
                     var connectedType = connection.ConnectedType;
 
-                    foreach (var entityToAdd in entitiesToAdd)
+                    foreach (var connectedEntity in connectedEntities)
                     {
-                        this.Save(entityToAdd);
+                        this.Save(connectedEntity);
                     }
 
                     if (isExistingEntity)
@@ -153,14 +158,14 @@ namespace StubDb
                         this.Storage.Connections.RemoveConnectionsFor(entityType, connectedType, connection.ConnectionName, entityId);
                     }
 
-                    foreach (var entityToAdd in entitiesToAdd)
+                    foreach (var connectedEntity in connectedEntities)
                     {
-                        this.Storage.Connections.AddConnection(entityType, this.GetEntityType(entityToAdd.GetType()), connection.ConnectionName, EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(entityToAdd), DoDataConsistencyTest);
+                        this.Storage.Connections.AddConnection(entityType, connectedType, connection.ConnectionName, EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(connectedEntity), DoDataConsistencyTest);
                     }
                 }
             }
 
-            this.DeepClearNavigationProperties(entity);
+            this.DeepClearNavigationProperties(entityToSave);
         }
 
         public void Remove(object entity)

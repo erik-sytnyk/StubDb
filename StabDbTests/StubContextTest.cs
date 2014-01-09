@@ -192,6 +192,24 @@ namespace StabDbTests
             Assert.AreEqual(student.FirstName, "Yegor");
         }
 
+        [TestMethod]
+        public void should_not_clear_navigation_of_project_which_is_added_to_context()
+        {
+            var context = new TestStubContext();
+
+            var instructor = new Instructor();
+            instructor.FirstName = "Alex";
+            instructor.Surname = "Sharamok";
+
+            var course = new Course();
+            course.Name = "Math";
+            course.Instructor = instructor;
+
+            context.Courses.Add(course);
+
+            Assert.IsNotNull(course.Instructor);            
+        }
+
         private TestStubContext InitializeTestContext(TestStubContext context)
         {
             var math = new Course() { Name = "Math" };

@@ -17,14 +17,19 @@ namespace StabDbTests
     {
         #region Nested classes
 
-        public class MyCollection: List<string>
+        public class MyEntityClass
+        {
+            public int Id { get; set; }
+        }
+
+        public class MyCollection : List<MyEntityClass>
         {
              
         }
 
         public class MyOtherCollection: IMyEnumerable
         {
-            public IEnumerator<string> GetEnumerator()
+            public IEnumerator<MyEntityClass> GetEnumerator()
             {
                 throw new NotImplementedException();
             }
@@ -35,7 +40,7 @@ namespace StabDbTests
             }
         }
 
-        public interface IMyEnumerable: IEnumerable<string>
+        public interface IMyEnumerable : IEnumerable<MyEntityClass>
         {
              
         }
@@ -54,9 +59,10 @@ namespace StabDbTests
         [TestMethod]
         public void should_check_if_is_enumerable_t()
         {
-            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(typeof(IEnumerable<int>)));
-            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(new List<string>().GetType()));
-            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable((new int[0]).GetType()));
+            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(typeof(IEnumerable<MyEntityClass>)));
+            Assert.IsFalse(EntityTypeManager.IsEntityTypedEnumerable(typeof(IEnumerable<int>)));
+            Assert.IsFalse(EntityTypeManager.IsEntityTypedEnumerable(new List<string>().GetType()));
+            Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable((new MyEntityClass[0]).GetType()));
             Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(typeof(MyCollection)));
             Assert.IsTrue(EntityTypeManager.IsEntityTypedEnumerable(typeof(MyOtherCollection)));
             Assert.IsFalse(EntityTypeManager.IsEntityTypedEnumerable((new ArrayList()).GetType()));
