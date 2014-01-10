@@ -39,10 +39,11 @@ namespace StabDbTests
 
             context.Add(parentQuestion);
 
-            var childFromContext = context.Questions.Query().Single(x => x.Text == "Child question");
+            var childFromContext = context.Questions.Query(2).Single(x => x.Text == "Parent question");
             
             Assert.IsNotNull(childFromContext.DependantQuestion);
-            Assert.AreEqual(childFromContext.DependantQuestion.Text, "Child-child question");
+            Assert.AreEqual(childFromContext.DependantQuestion.Text, "Child question");
+            Assert.AreEqual(childFromContext.DependantQuestion.DependantQuestion.Text, "Child-child question");
         }
     }
 }
