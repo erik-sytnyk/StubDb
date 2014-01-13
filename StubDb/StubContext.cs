@@ -380,13 +380,15 @@ namespace StubDb
 
         private void DeepClearNavigationProperties(object entity)
         {
-            var entityType = entity.GetType();
+            var entityType = this.GetEntityType(entity.GetType());
 
-            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
+            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
             {
-                var enumerableEntityType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
+                var connection = entityType.Connections.SingleOrDefault(x => x.PropertyName == propertyInfo.Name);
 
-                if (enumerableEntityType != null && this.Types.ContainsKey(enumerableEntityType.GetId()))
+                if (connection == null) continue;
+
+                if (connection.IsMultipleConnection)
                 {
                     var connectedCollection = propertyInfo.GetValue(entity) as IEnumerable;
 
@@ -399,7 +401,7 @@ namespace StubDb
                         propertyInfo.SetValue(entity, null);
                     }
                 }
-                else if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(propertyInfo.PropertyType))
+                else
                 {
                     var connectedProperty = propertyInfo.GetValue(entity);
 
