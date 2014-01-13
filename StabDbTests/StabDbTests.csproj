@@ -57,6 +57,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="BaseTest.cs" />
+    <Compile Include="EntitiesWithInheritanceTest.cs" />
     <Compile Include="EntityTypeManagerTest.cs" />
     <Compile Include="PerformanceTest.cs" />
     <Compile Include="ObjectCloningTest.cs" />

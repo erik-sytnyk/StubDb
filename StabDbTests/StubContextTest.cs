@@ -210,6 +210,22 @@ namespace StabDbTests
             Assert.IsNotNull(course.Instructor);            
         }
 
+        [TestMethod]
+        public void should_remove_connections_during_update_if_they_set_to_null()
+        {
+            var context = this.InitializeTestContext(new TestStubContext());
+
+            var alex = context.Instructors.Query().Single(x => x.FirstName == "Alex");
+
+            alex.Courses = null;
+
+            context.Instructors.Update(alex);
+
+            var alexAfterUpdate = context.Instructors.Query().Single(x => x.FirstName == "Alex");
+
+            Assert.IsNull(alexAfterUpdate.Courses);
+        }
+
         private TestStubContext InitializeTestContext(TestStubContext context)
         {
             var math = new Course() { Name = "Math" };

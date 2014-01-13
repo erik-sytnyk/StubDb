@@ -35,9 +35,13 @@ namespace StabDbTests
         {
             var obj = new MyObject() {Number = 4, Text = "Hey"};
 
-            var clone = EntityTypeManager.CloneObject(obj);
+            var clone = EntityTypeManager.CloneObject(obj) as MyObject;
 
             Assert.IsNotNull(clone);
+
+            clone.Text = "Hey_Updated";
+
+            Assert.AreNotSame(obj.Text, clone.Text);
         }
 
         [TestMethod]

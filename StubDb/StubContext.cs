@@ -144,18 +144,18 @@ namespace StubDb
                     }
                 }
 
+                var connectedType = connection.ConnectedType;
+
+                if (isExistingEntity)
+                {
+                    this.Storage.Connections.RemoveConnectionsFor(entityType, connectedType, connection.ConnectionName, entityId);
+                }
+
                 if (connectedEntities.Count > 0)
                 {
-                    var connectedType = connection.ConnectedType;
-
                     foreach (var connectedEntity in connectedEntities)
                     {
                         this.Save(connectedEntity);
-                    }
-
-                    if (isExistingEntity)
-                    {
-                        this.Storage.Connections.RemoveConnectionsFor(entityType, connectedType, connection.ConnectionName, entityId);
                     }
 
                     foreach (var connectedEntity in connectedEntities)

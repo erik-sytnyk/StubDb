@@ -58,6 +58,11 @@ namespace StubDb.ModelStorage
                 Check.That(existingConnection == null, "Trying to add existing connection");
             }
             this.Add(new Tuple<int, int>(idFirst, idSecond));
+            this.ClearCache();
+        }
+
+        public void ClearCache()
+        {
             _dictionaryByIdFirst = null;
             _dictionaryByIdSecond = null;
         }
@@ -92,6 +97,7 @@ namespace StubDb.ModelStorage
                 {
                     _storage[key].RemoveAll(x => x.Item2 == entityId);
                 }
+                _storage[key].ClearCache();
             }
         }
 
