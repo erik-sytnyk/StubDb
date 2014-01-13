@@ -296,13 +296,13 @@ namespace StubDb
             {
                 var entityType = (Type)null;
 
-                var enumerableType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
+                var enumerableEntityType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
 
-                if (enumerableType != null && !EntityTypeManager.IsSimpleType(enumerableType))
+                if (enumerableEntityType != null)
                 {
-                    entityType = enumerableType;
+                    entityType = enumerableEntityType;
                 }
-                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
+                else if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(propertyInfo.PropertyType))
                 {
                     entityType = propertyInfo.PropertyType;
                 }
@@ -384,9 +384,9 @@ namespace StubDb
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType))
             {
-                var enumerableType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
+                var enumerableEntityType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
 
-                if (enumerableType != null && this.Types.ContainsKey(enumerableType.GetId()))
+                if (enumerableEntityType != null && this.Types.ContainsKey(enumerableEntityType.GetId()))
                 {
                     var connectedCollection = propertyInfo.GetValue(entity) as IEnumerable;
 
@@ -399,7 +399,7 @@ namespace StubDb
                         propertyInfo.SetValue(entity, null);
                     }
                 }
-                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
+                else if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(propertyInfo.PropertyType))
                 {
                     var connectedProperty = propertyInfo.GetValue(entity);
 

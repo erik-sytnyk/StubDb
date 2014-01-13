@@ -56,10 +56,22 @@ namespace StubDb
 
         public static IEnumerable<PropertyInfo> GetSimpleWritableProperties(Type type)
         {
-            return GetProperties(type).Where(p => IsSimpleType(p.PropertyType) && p.SetMethod != null);
+            return GetProperties(type).Where(p => IsSimpleOrSimpleEnumerableType(p.PropertyType) && p.SetMethod != null);
         }
 
         public static bool UseFullTypeNameAsId { get; set; }
+
+        public static bool IsSimpleOrSimpleEnumerableType(Type type)
+        {
+            var enumerableType = GetEnumerableType(type);
+
+            if (enumerableType != null)
+            {
+                return IsSimpleType(enumerableType);
+            }
+
+            return IsSimpleType(type);
+        }
 
         public static bool IsSimpleType(Type type)
         {
@@ -67,7 +79,6 @@ namespace StubDb
             {
                 return true;
             }
-
             return false;
         }
 
@@ -77,7 +88,7 @@ namespace StubDb
             return result;
         }
 
-        public static bool IsEntityTypedEnumerable(Type type)
+        public static bool IsEnumerableEntityType(Type type)
         {
             var genericType = GetEnumerableEntityType(type);
             return genericType != null;
@@ -85,7 +96,19 @@ namespace StubDb
 
         public static Type GetEnumerableEntityType(Type type)
         {
-            var result = (Type) null;
+            var result = GetEnumerableType(type);
+
+            if (result != null && IsSimpleType(result))
+            {
+                result = null;
+            }
+
+            return result;
+        }
+
+        public static Type GetEnumerableType(Type type)
+        {
+            var result = (Type)null;
 
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
             {
@@ -98,11 +121,6 @@ namespace StubDb
                 {
                     result = intType.GetGenericArguments()[0];
                 }
-            }
-
-            if (result != null && IsSimpleType(result))
-            {
-                result = null;
             }
 
             return result;
@@ -224,7 +242,7 @@ namespace StubDb
 
             var idProp = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
 
-            Check.That(idProp != null, "Entity type does not have id property");
+            Check.That(idProp != null, String.Format("Entity type '{0}' does not have id property", type.Name));
 
             Check.That(idProp.PropertyType == typeof(int), "Entity id is not of type integer");
 

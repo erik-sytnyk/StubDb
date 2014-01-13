@@ -71,6 +71,7 @@
     <Compile Include="TestContext\Student.cs" />
     <Compile Include="TestContext\TestStubContext.cs" />
     <Compile Include="NamedConnectionsTest.cs" />
+    <Compile Include="TypeRegistrationTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\StubDb\StubDb.csproj">

@@ -40,18 +40,18 @@ namespace StubDb.ModelStorage
 
             foreach (var propertyInfo in entityTypeInfo.GetProperties())
             {
-                var enumerableType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
+                var enumerableEntityType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
 
                 var connectionInfo = (EntityConnectionInfo)null;
 
-                if (enumerableType != null)
+                if (enumerableEntityType != null)
                 {
                     connectionInfo = new EntityConnectionInfo();
                     connectionInfo.IsMultipleConnection = true;
-                    connectionInfo.ConnectedType = this.GetType(enumerableType);
+                    connectionInfo.ConnectedType = this.GetType(enumerableEntityType);
                     connectionInfo.PropertyName = propertyInfo.Name;
                 }
-                else if (!EntityTypeManager.IsSimpleType(propertyInfo.PropertyType))
+                else if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(propertyInfo.PropertyType))
                 {
                     connectionInfo = new EntityConnectionInfo();
                     connectionInfo.IsMultipleConnection = false;
