@@ -101,6 +101,7 @@ namespace StubDb
             }
 
             var entityToSave = EntityTypeManager.CloneObject(entity);
+            ClearNavigationProperties(entityToSave);
             if (!isExistingEntity)
             {
                 this.Storage.Entities.Add(entityId, entityToSave);
@@ -165,7 +166,7 @@ namespace StubDb
                 }
             }
 
-            this.DeepClearNavigationProperties(entityToSave);
+            this.ClearNavigationProperties(entityToSave);
         }
 
         public void Remove(object entity)
@@ -378,7 +379,7 @@ namespace StubDb
             }
         }
 
-        private void DeepClearNavigationProperties(object entity)
+        private void ClearNavigationProperties(object entity)
         {
             var entityType = this.GetEntityType(entity.GetType());
 
@@ -388,30 +389,7 @@ namespace StubDb
 
                 if (connection == null) continue;
 
-                if (connection.IsMultipleConnection)
-                {
-                    var connectedCollection = propertyInfo.GetValue(entity) as IEnumerable;
-
-                    if (connectedCollection != null)
-                    {
-                        foreach (var collectionItem in connectedCollection)
-                        {
-                            DeepClearNavigationProperties(collectionItem);
-                        }
-                        propertyInfo.SetValue(entity, null);
-                    }
-                }
-                else
-                {
-                    var connectedProperty = propertyInfo.GetValue(entity);
-
-                    if (connectedProperty != null)
-                    {
-                        DeepClearNavigationProperties(connectedProperty);
-                        propertyInfo.SetValue(entity, null);
-                    }
-
-                }
+                propertyInfo.SetValue(entity, null);
             }
         }
 
