@@ -21,6 +21,8 @@ namespace StubDb.ModelStorage
             return this.UniqueName;
         }
 
+        public PropertyInfo IdProperty { get; set; }
+
         public List<EntityConnectionInfo> Connections { get; set; }
 
         public EntityTypeInfo()
@@ -40,6 +42,16 @@ namespace StubDb.ModelStorage
             if (entityTypeInfo == null) return false;
 
             return entityTypeInfo.UniqueName == this.UniqueName;
+        }
+
+        public int GetEntityId(object entity)
+        {
+            return (int)this.IdProperty.GetValue(entity);
+        }
+
+        public void SetEntityId(object entity, int id)
+        {
+            this.IdProperty.SetValue(entity, id);
         }
     }
 }

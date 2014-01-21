@@ -72,7 +72,15 @@ namespace StubDb
 
         public void Add(object entity)
         {
-            EntityTypeManager.SetEntityAsNew(entity);
+            var entityType = this.GetEntityType(entity.GetType());
+
+            var id = entityType.GetEntityId(entity);
+            
+            if (id != 0)
+            {
+                entityType.SetEntityId(entity, 0);
+            }
+
             this.Save(entity);
         }
 
@@ -87,7 +95,7 @@ namespace StubDb
 
             var properties = entityType.GetProperties();
 
-            var entityId = EntityTypeManager.GetEntityId(entity);
+            var entityId = entityType.GetEntityId(entity);
 
             var existingEntity = this.Storage.Entities.GetById(entityId, entityType);
             var isExistingEntity = existingEntity != null;
@@ -95,7 +103,7 @@ namespace StubDb
             {
                 var newId = this.Storage.Entities.GetAvailableIdForEntityType(entityType);
 
-                EntityTypeManager.SetEntityId(entity, newId);
+                entityType.SetEntityId(entity, newId);
 
                 entityId = newId;
             }
@@ -156,12 +164,17 @@ namespace StubDb
                 {
                     foreach (var connectedEntity in connectedEntities)
                     {
-                        this.Save(connectedEntity);
+                        var connectedEntityId = connectedType.GetEntityId(connectedEntity);
+                        var existingConnectedEntity = this.Storage.Entities.GetById(connectedEntityId, connectedType);
+                        if (existingConnectedEntity == null) //do not save existing connected entities
+                        {
+                            this.Save(connectedEntity);   
+                        }
                     }
 
                     foreach (var connectedEntity in connectedEntities)
                     {
-                        this.Storage.Connections.AddConnection(entityType, connectedType, connection.ConnectionName, EntityTypeManager.GetEntityId(entity), EntityTypeManager.GetEntityId(connectedEntity), DoDataConsistencyTest);
+                        this.Storage.Connections.AddConnection(entityType, connectedType, connection.ConnectionName, entityType.GetEntityId(entity), connectedType.GetEntityId(connectedEntity), DoDataConsistencyTest);
                     }
                 }
             }
@@ -171,12 +184,11 @@ namespace StubDb
 
         public void Remove(object entity)
         {
-            var entityType = entity.GetType();
-            this.GetEntityType(entityType);
+            var entityType = this.GetEntityType(entity.GetType());
+            
+            var entityId = entityType.GetEntityId(entity);
 
-            var entityId = EntityTypeManager.GetEntityId(entity);
-
-            this.Remove(entityType, entityId);
+            this.Remove(entityType.Type, entityId);
         }
 
         internal void Remove(Type type, int id)
@@ -319,7 +331,7 @@ namespace StubDb
         private void LoadNavigationProperties(int dependenciesLevel, object entity)
         {
             var entityType = this.GetEntityType(entity.GetType());
-            var entityId = EntityTypeManager.GetEntityId(entity);
+            var entityId = entityType.GetEntityId(entity);
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
             {

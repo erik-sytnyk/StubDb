@@ -236,34 +236,17 @@ namespace StubDb
             return newObject;
         }
 
-        public static int GetEntityId(object entity)
+        public static PropertyInfo GetEntityIdProperty(Type type)
         {
-            var type = entity.GetType();
+            var typeNamePlusId = String.Format("{0}Id", type.Name);
 
-            var idProp = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
+            var result = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name.Equals("id", StringComparison.OrdinalIgnoreCase) || x.Name.Equals(typeNamePlusId, StringComparison.OrdinalIgnoreCase));
 
-            Check.That(idProp != null, String.Format("Entity type '{0}' does not have id property", type.Name));
+            Check.That(result != null, String.Format("Entity type '{0}' does not have id property", type.Name));
 
-            Check.That(idProp.PropertyType == typeof(int), "Entity id is not of type integer");
+            Check.That(result.PropertyType == typeof(int), "Entity id is not of type integer");
 
-            return (int)idProp.GetValue(entity);
-        }
-
-        public static void SetEntityAsNew(object entity)
-        {
-            var id = GetEntityId(entity);
-
-            if (id != 0)
-            {
-                SetEntityId(entity, 0);
-            }
-        }
-
-        public static void SetEntityId(object entity, int id)
-        {
-            var type = entity.GetType();
-            var idProp = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name == "Id");
-            idProp.SetValue(entity, id);
+            return result;
         }
     }
 }

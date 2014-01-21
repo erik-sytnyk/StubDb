@@ -13,6 +13,7 @@ namespace StubDb.ModelStorage
 
             entityTypeInfo.Type = type;
             entityTypeInfo.Id = this.GetNextAvailableId();
+            entityTypeInfo.IdProperty = EntityTypeManager.GetEntityIdProperty(type);
 
             base.Add(type.Name, entityTypeInfo);
         }

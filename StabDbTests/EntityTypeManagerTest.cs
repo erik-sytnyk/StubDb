@@ -50,9 +50,14 @@ namespace StabDbTests
         [TestMethod]
         public void should_get_entity_id()
         {
-            var context = new TestStubContext();
             var student = new Student() { Id = 5, Surname = "SomeOne" };
-            var id = EntityTypeManager.GetEntityId(student);
+            
+            var idProp = EntityTypeManager.GetEntityIdProperty(student.GetType());
+
+            Assert.IsNotNull(idProp);
+
+            var id = idProp.GetValue(student);
+            
             Assert.AreEqual(id, 5);
         }
 
