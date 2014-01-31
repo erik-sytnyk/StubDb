@@ -38,10 +38,32 @@ namespace StabDbTests
             public int Id { get; set; }
         }
 
-        public class TestContext : StubContext
+        public class TypeRegistractionContext : StubContext
         {
             public StubSet<ParentContainerFirst> FirstParentItems { get; set; }
             public StubSet<ParentContainerSecond> SecondParentItems { get; set; }
+        }
+
+        public class EntityWithNavigationProperty
+        {
+            public int Id { get; set; }
+
+            public EntityWithoutNavigationProperty ConnectedEnity
+            {
+                get;
+                set;
+            }            
+        }
+
+        public class EntityWithoutNavigationProperty
+        {
+            public int Id { get; set; }
+        }
+
+        public class ConnectionsRegistrationContext: StubContext
+        {
+            public StubSet<EntityWithNavigationProperty> EntitiesWithNavigationProperty { get; set; }
+            public StubSet<EntityWithoutNavigationProperty> EntitiesWithoutNavigationProperty { get; set; }
         }
 
         #endregion
@@ -49,7 +71,7 @@ namespace StabDbTests
         [TestMethod]
         public void should_register_types_correctly()
         {
-            var context = new TestContext();
+            var context = new TypeRegistractionContext();
 
             var typeNames = context.Types.Select(x => x.Value.UniqueName).ToList();
 
@@ -59,6 +81,17 @@ namespace StabDbTests
             Assert.IsTrue(typeNames.Contains("ChildSecond"));
 
             Assert.AreEqual(typeNames.Count, 4);
+        }
+
+        [TestMethod]
+        public void should_initialize_connection_for_type_when_there_is_no_navigation_property_in_the_type_but_there_is_one_in_connected_type()
+        {
+            var context = new ConnectionsRegistrationContext();
+            
+            var typeWithoutNavigationProperty =
+                context.Types.Single(x => x.Value.Type == typeof (EntityWithoutNavigationProperty)).Value;
+            
+            Assert.IsTrue(typeWithoutNavigationProperty.Connections.Count > 0);
         }
 
     }

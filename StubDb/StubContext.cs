@@ -291,6 +291,35 @@ namespace StubDb
             }
         }
 
+        public void RegisterEntityTypes(Type containerType)
+        {
+            var typesToRegister = new Dictionary<string, Type>();
+
+            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
+
+            foreach (var stubSetProperty in stubSetProperties)
+            {
+                var typeOfStubSet = stubSetProperty.PropertyType.GetGenericArguments().First();
+                typesToRegister.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
+                AddEntityTypes(typeOfStubSet, typesToRegister);
+            }
+
+            this.Types = new EntityTypeCollection();
+
+            foreach (var keyValuePair in typesToRegister)
+            {
+                this.Types.Add(keyValuePair.Value);
+            }
+
+            foreach (var type in typesToRegister.Values)
+            {
+                var typeInfo = this.Types.GetType(type);
+                this.Types.LoadConnections(typeInfo);
+            }
+
+            this.UpdateConnections(this.Types);
+        }
+
         #region Helper functions
 
         internal EntityTypeInfo GetEntityType(Type type)
@@ -352,6 +381,8 @@ namespace StubDb
                         {
                             var entityToAdd = this.Storage.Entities.GetById(connectionId, connectedEntityType);
 
+                            Check.NotNull(entityToAdd, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedEntityType.Type.FullName, connectionId));
+
                             if (dependenciesLevel > 0)
                             {
                                 LoadNavigationProperties(dependenciesLevel - 1, entityToAdd);
@@ -375,6 +406,8 @@ namespace StubDb
                         var connectedId = connections.Single();
 
                         var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedEntityType);
+
+                        Check.NotNull(connectedEntity, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedEntityType.Type.FullName, connectedId));
 
                         if (dependenciesLevel > 0)
                         {
@@ -501,30 +534,40 @@ namespace StubDb
             //TODO implement
         }
 
-        public void RegisterEntityTypes(Type containerType)
+        private void UpdateConnections(EntityTypeCollection types)
         {
-            var typesToRegister = new Dictionary<string, Type>();
-
-            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
-
-            foreach (var stubSetProperty in stubSetProperties)
+            foreach (var type in types)
             {
-                var typeOfStubSet = stubSetProperty.PropertyType.GetGenericArguments().First();
-                typesToRegister.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
-                AddEntityTypes(typeOfStubSet, typesToRegister);
-            }
+                foreach (var connection in type.Value.Connections)
+                {
+                    var connectionToCurrentTypeFromReferencingType =
+                        connection.ConnectedType.Connections.Where(x => x.ConnectedType.Equals(type));
 
-            this.Types = new EntityTypeCollection();
+                    if (connection.IsNamedConnection)
+                    {
+                        //there should be no navigation property referencing current type from connected type
+                        var excpetionMessage =
+                            String.Format(
+                                "There are a few properties of type {0} referencing type {1}. In this case type {1} should not have references to type {0}",
+                                type.Value.Type.Name, connection.ConnectedType.Type.Name);
 
-            foreach (var keyValuePair in typesToRegister)
-            {
-                this.Types.Add(keyValuePair.Value);
-            }
+                        Check.That(connectionToCurrentTypeFromReferencingType.Any(), excpetionMessage);
+                    }
+                    else
+                    {
+                        if (!connectionToCurrentTypeFromReferencingType.Any())
+                        {
+                            var missingBackwardConnection = new EntityConnectionInfo();
 
-            foreach (var type in typesToRegister.Values)
-            {
-                var typeInfo = this.Types.GetType(type);
-                this.Types.LoadConnections(typeInfo);
+                            missingBackwardConnection.ConnectedType = type.Value;
+                            missingBackwardConnection.IsMultipleConnection = false;
+                            missingBackwardConnection.IsNamedConnection = false;
+                            missingBackwardConnection.PropertyName = null;
+
+                            connection.ConnectedType.Connections.Add(missingBackwardConnection);
+                        }
+                    }
+                }
             }
         }
 

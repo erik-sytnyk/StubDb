@@ -35,6 +35,7 @@ namespace StubDb.ModelStorage
             return EntityTypeManager.GetProperties(this.Type);
         }
 
+        //TODO add == operator overload
         public override bool Equals(object obj)
         {
             var entityTypeInfo = obj as EntityTypeInfo;

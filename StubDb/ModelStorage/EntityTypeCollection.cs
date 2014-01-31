@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ext.Core;
 using Ext.Core.Collections;
 
 namespace StubDb.ModelStorage
@@ -69,7 +70,6 @@ namespace StubDb.ModelStorage
                 }
             }
 
-            //TODO check that type with named connection is not connected to referencing type
             var typesWithNamedConnections = connectionsCounterByType.Where(x => x.Value > 1).Select(x => x.Key).ToList();
 
             foreach (var entityConnectionInfo in connectionInfoList)
