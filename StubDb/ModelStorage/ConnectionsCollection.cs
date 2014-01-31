@@ -89,7 +89,7 @@ namespace StubDb.ModelStorage
             var key = newConnection.GetUniqueKey();
             if (_storage.ContainsKey(key))
             {
-                if (newConnection.TypeFirst.Equals(entityType))
+                if (newConnection.TypeFirst == entityType)
                 {
                     _storage[key].RemoveAll(x => x.Item1 == entityId);
                 }
@@ -109,7 +109,7 @@ namespace StubDb.ModelStorage
 
             if (!_storage.ContainsKey(key)) return result;
 
-            var dict = newConnection.TypeFirst.Equals(entityType) ?  _storage[key].GroupByIdFirst(): _storage[key].GroupByIdSecond();
+            var dict = newConnection.TypeFirst == entityType ?  _storage[key].GroupByIdFirst(): _storage[key].GroupByIdSecond();
 
             if (dict.ContainsKey(entityId))
             {

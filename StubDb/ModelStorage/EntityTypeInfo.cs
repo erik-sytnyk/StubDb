@@ -35,7 +35,6 @@ namespace StubDb.ModelStorage
             return EntityTypeManager.GetProperties(this.Type);
         }
 
-        //TODO add == operator overload
         public override bool Equals(object obj)
         {
             var entityTypeInfo = obj as EntityTypeInfo;
@@ -43,6 +42,28 @@ namespace StubDb.ModelStorage
             if (entityTypeInfo == null) return false;
 
             return entityTypeInfo.UniqueName == this.UniqueName;
+        }
+
+        public static bool operator ==(EntityTypeInfo a, EntityTypeInfo b)
+        {
+            // If both are null, or both are same instance, return true.
+            if (System.Object.ReferenceEquals(a, b))
+            {
+                return true;
+            }
+
+            // If one is null, but not both, return false.
+            if (((object)a == null) || ((object)b == null))
+            {
+                return false;
+            }
+
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(EntityTypeInfo a, EntityTypeInfo b)
+        {
+            return !(a == b);
         }
 
         public int GetEntityId(object entity)

@@ -204,8 +204,8 @@ namespace StubDb
                 var allConnections = this.Storage.Connections.GetAllConnectionsData();
 
                 //TODO performance, readability
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst.Equals(requiredDependancy.DependantType) && x.TypeSecond.Equals(requiredDependancy.RequiredType)).SelectMany(x => x).Where(x => x.Item2 == id).Select(x => x.Item1));
-                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst.Equals(requiredDependancy.RequiredType) && x.TypeSecond.Equals(requiredDependancy.DependantType)).SelectMany(x => x).Where(x => x.Item1 == id).Select(x => x.Item2));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.DependantType && x.TypeSecond == requiredDependancy.RequiredType).SelectMany(x => x).Where(x => x.Item2 == id).Select(x => x.Item1));
+                connectedIds.AddRange(allConnections.Where(x => x.TypeFirst == requiredDependancy.RequiredType && x.TypeSecond == requiredDependancy.DependantType).SelectMany(x => x).Where(x => x.Item1 == id).Select(x => x.Item2));
 
                 foreach (var connectedId in connectedIds)
                 {
@@ -215,7 +215,7 @@ namespace StubDb
 
             foreach (var connection in entityType.Connections)
             {
-                this.Storage.Connections.RemoveConnectionsFor(entityType, connection.ConnectedType, connection.PropertyName, id);
+                this.Storage.Connections.RemoveConnectionsFor(entityType, connection.ConnectedType, connection.ConnectionName, id);
             }
 
             this.Storage.Entities.Remove(id, entityType);
@@ -471,9 +471,9 @@ namespace StubDb
 
                 foreach (var entityConnection in connectionsData.ToList())
                 {
-                    if (entityConnection.TypeFirst.Equals(entityType) || entityConnection.TypeSecond.Equals(entityType))
+                    if (entityConnection.TypeFirst == entityType || entityConnection.TypeSecond == entityType)
                     {
-                        var firstIsEntity = entityConnection.TypeFirst.Equals(entityType);
+                        var firstIsEntity = entityConnection.TypeFirst == entityType;
 
                         var connectedType = firstIsEntity ? entityConnection.TypeSecond : entityConnection.TypeFirst;
                         foreach (var connection in entityConnection)
@@ -538,10 +538,11 @@ namespace StubDb
         {
             foreach (var type in types)
             {
-                foreach (var connection in type.Value.Connections)
+                var typeConnections = type.Value.Connections.ToList();
+                foreach (var connection in typeConnections)
                 {
                     var connectionToCurrentTypeFromReferencingType =
-                        connection.ConnectedType.Connections.Where(x => x.ConnectedType.Equals(type));
+                        connection.ConnectedType.Connections.Where(x => x.ConnectedType == type.Value);
 
                     if (connection.IsNamedConnection)
                     {
@@ -551,7 +552,7 @@ namespace StubDb
                                 "There are a few properties of type {0} referencing type {1}. In this case type {1} should not have references to type {0}",
                                 type.Value.Type.Name, connection.ConnectedType.Type.Name);
 
-                        Check.That(connectionToCurrentTypeFromReferencingType.Any(), excpetionMessage);
+                        Check.That(!connectionToCurrentTypeFromReferencingType.Any(), excpetionMessage);
                     }
                     else
                     {
