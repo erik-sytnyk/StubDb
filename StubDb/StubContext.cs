@@ -373,10 +373,10 @@ namespace StubDb
                     var connectedEntityType = connection.ConnectedType;
                     var connections = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, connection.ConnectionName, entityId);
 
+                    var newList = EntityTypeManager.CreateGenericList(connectedEntityType.Type);
+
                     if (connections.Count > 0)
                     {
-                        var newList = EntityTypeManager.CreateGenericList(connectedEntityType.Type);
-
                         foreach (var connectionId in connections)
                         {
                             var entityToAdd = this.Storage.Entities.GetById(connectionId, connectedEntityType);
@@ -389,10 +389,10 @@ namespace StubDb
                             }
 
                             newList.Add(entityToAdd);
-                        }
-
-                        propertyInfo.SetValue(entity, newList);
+                        }                        
                     }
+
+                    propertyInfo.SetValue(entity, newList);
                 }
                 else
                 {

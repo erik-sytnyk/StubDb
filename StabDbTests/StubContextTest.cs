@@ -223,8 +223,6 @@ namespace StabDbTests
 
             var alexAfterUpdate = context.Instructors.Query().Single(x => x.FirstName == "Alex");
 
-            Assert.IsNull(alexAfterUpdate.Courses);
-
             var literature = context.Courses.Query().Single(x => x.Name == "Literature");
 
             Assert.IsNotNull(literature.Location);
