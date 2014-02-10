@@ -7,6 +7,8 @@
         <authors>Yegor Sytnyk</authors>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>StubDb makes it simple to create stub data access layer for fast prototyping or easy unit testing.</description>
+		<projectUrl>https://github.com/yegor-sytnyk/StubDb</projectUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
         <copyright />
     </metadata>
 </package>
