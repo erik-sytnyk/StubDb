@@ -218,10 +218,14 @@ namespace StabDbTests
             var alex = context.Instructors.Query().Single(x => x.FirstName == "Alex");
 
             alex.Courses = null;
+            alex.Surname = "Black";
 
             context.Instructors.Update(alex);
 
             var alexAfterUpdate = context.Instructors.Query().Single(x => x.FirstName == "Alex");
+
+            Assert.IsTrue(alexAfterUpdate.Courses.Count == 0);
+            Assert.AreEqual(alexAfterUpdate.Surname, "Black");
 
             var literature = context.Courses.Query().Single(x => x.Name == "Literature");
 
