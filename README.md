@@ -18,3 +18,7 @@ public class MyStubContext: StubContext
        public StubSet<Student> Students { get; set; } 
 }
 ```
+
+Entities which are in StubSet properties of context or their inner property types (which are not simple types as string, int, bool, etc) are registered as entity types for that context.
+
+To add data to context we can use Add method in StubSet<TEntity>. It will add entity with all inner connections.
