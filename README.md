@@ -21,4 +21,37 @@ public class MyStubContext: StubContext
 
 Entities which are in StubSet properties of context or their inner property types (which are not simple types as string, int, bool, etc) are registered as entity types for that context.
 
-To add data to context we can use Add method in StubSet<TEntity>. It will add entity with all inner connections.
+StubDb tries to make API as simple as possible, hiding most of implementation details.
+
+Main point of interaction is via StubSet<TEntity> properties of context class.
+
+StubSet<TEntity> implements IStubSet<TEntity>
+
+```C#
+public interface IStubSet<TEntity>
+{
+       void Add(TEntity entity);
+       void Update(TEntity entity);
+       void Remove(TEntity entity);
+       void Remove(int id);
+       IQueryable<TEntity> Query(int levelOfDependenciesToLoad);
+}
+```    
+
+To add data to context we can use Add method in StubSet<TEntity>. It will add entity with all connected entities from navigation properties.
+
+To update entity use Upadte method. It will update entity with its connections, but will not update existing connected entities.
+
+To delete data use Remove method.
+
+To query data use Query method in StubSet<TEntity>. By default it will get corresponding entities from context with its navigation properties. There is optional levelOfDependenciesToLoad parameter (equals 1 be default), if you want to inialize depper level of dependancies you can use it. For example, if you select level 2 it means entities will be loaded with their dependencies, which in turn will be loaded with their dependencies, but not deeper.
+
+There are a few methods in StubContext class. Methods Add, Update, Remove, Query will work the same as corresponding methods in StubSet<TEntity>.
+
+Methods SaveData/LoadData will Save/Load data to the file. This is not well tested functionality. Contributions are welcome.
+
+SeedData is used to seed data for the context, when it is empty. It gets SeedDataAction as parameter
+
+```C#
+       public delegate void SeedDataAction(StubContext context);
+```
