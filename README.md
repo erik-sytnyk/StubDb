@@ -40,7 +40,7 @@ public interface IStubSet<TEntity>
 
 To add data to context we can use Add method in StubSet<TEntity>. It will add entity with all connected entities from navigation properties.
 
-To update entity use Upadte method. It will update entity with its connections, but will not update existing connected entities.
+To update entity use Update method. It will update entity with its connections, but will not update existing connected entities.
 
 To delete data use Remove method. It will remove entity and will clear its connections to other entities.
 
