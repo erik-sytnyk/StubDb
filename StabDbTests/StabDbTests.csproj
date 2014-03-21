@@ -72,6 +72,7 @@
     <Compile Include="TestContext\TestStubContext.cs" />
     <Compile Include="NamedConnectionsTest.cs" />
     <Compile Include="TypeRegistrationTest.cs" />
+    <Compile Include="NavigationPropertiesIdFieldsTest.cs" />
     <Compile Include="UpdatingMultipleLevelsOfDependanciesTest.cs" />
   </ItemGroup>
   <ItemGroup>

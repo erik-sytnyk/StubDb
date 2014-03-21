@@ -48,17 +48,12 @@ namespace StubDb.ModelStorage
 
                 if (enumerableEntityType != null)
                 {
-                    connectionInfo = new EntityConnectionInfo();
-                    connectionInfo.IsMultipleConnection = true;
-                    connectionInfo.ConnectedType = this.GetType(enumerableEntityType);
-                    connectionInfo.PropertyName = propertyInfo.Name;
+                    connectionInfo = new EntityConnectionInfo(entityTypeInfo, this.GetType(enumerableEntityType), propertyInfo.Name, true);
+
                 }
                 else if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(propertyInfo.PropertyType))
                 {
-                    connectionInfo = new EntityConnectionInfo();
-                    connectionInfo.IsMultipleConnection = false;
-                    connectionInfo.ConnectedType = this.GetType(propertyInfo.PropertyType);
-                    connectionInfo.PropertyName = propertyInfo.Name;
+                    connectionInfo = new EntityConnectionInfo(entityTypeInfo, this.GetType(propertyInfo.PropertyType), propertyInfo.Name, false);
                 }
 
                 if (connectionInfo != null)

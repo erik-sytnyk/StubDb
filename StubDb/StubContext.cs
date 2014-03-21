@@ -122,11 +122,13 @@ namespace StubDb
             //load connections
             foreach (var propertyInfo in properties)
             {
-                var connection = entityType.Connections.SingleOrDefault(x => x.PropertyName == propertyInfo.Name);
+                var connection = entityType.Connections.SingleOrDefault(x => x.NavigationPropertyName == propertyInfo.Name);
 
                 if (connection == null) continue;
 
                 var connectedEntities = new List<object>();
+
+                var connectedType = connection.ConnectedType;
 
                 if (connection.IsMultipleConnection)
                 {
@@ -143,7 +145,8 @@ namespace StubDb
                         connectedEntities.Add(item);
                     }
                 }
-                else
+                
+                if (connection.IsSingleConnection)
                 {
                     var connectedEntity = propertyInfo.GetValue(entity);
 
@@ -151,16 +154,23 @@ namespace StubDb
                     {
                         connectedEntities.Add(connectedEntity);
                     }
+                    else if (connection.HasNavigationIdProperty)
+                    {
+                        var connectedEntityId = connection.GetNavigationIdProperty(entity);
+                        var existingConnectedEntity = this.Storage.Entities.GetById(connectedEntityId, connectedType);
+                        if (existingConnectedEntity != null)
+                        {
+                            connectedEntities.Add(existingConnectedEntity);
+                        }
+                    }
                 }
-
-                var connectedType = connection.ConnectedType;
 
                 if (isExistingEntity)
                 {
                     this.Storage.Connections.RemoveConnectionsFor(entityType, connectedType, connection.ConnectionName, entityId);
                 }
 
-                if (connectedEntities.Count > 0)
+                if (connectedEntities.Any())
                 {
                     foreach (var connectedEntity in connectedEntities)
                     {
@@ -317,7 +327,7 @@ namespace StubDb
                 this.Types.LoadConnections(typeInfo);
             }
 
-            this.UpdateConnections(this.Types);
+            this.UpdateNamedConnections(this.Types);
         }
 
         #region Helper functions
@@ -364,7 +374,7 @@ namespace StubDb
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
             {
-                var connection = entityType.Connections.SingleOrDefault(x => x.PropertyName == propertyInfo.Name);
+                var connection = entityType.Connections.SingleOrDefault(x => x.NavigationPropertyName == propertyInfo.Name);
 
                 if (connection == null) continue;
 
@@ -415,6 +425,11 @@ namespace StubDb
                         }
 
                         propertyInfo.SetValue(entity, connectedEntity);
+
+                        if (connection.HasNavigationIdProperty)
+                        {
+                            connection.SetNavigationIdProperty(entity, connectedId);
+                        }
                     }
                     else //no connection, so clear property
                     {
@@ -430,11 +445,16 @@ namespace StubDb
 
             foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
             {
-                var connection = entityType.Connections.SingleOrDefault(x => x.PropertyName == propertyInfo.Name);
+                var connection = entityType.Connections.SingleOrDefault(x => x.NavigationPropertyName == propertyInfo.Name);
 
                 if (connection == null) continue;
 
                 propertyInfo.SetValue(entity, null);
+
+                if (connection.HasNavigationIdProperty)
+                {
+                    connection.ClearNavigationIdProperty(entity);   
+                }
             }
         }
 
@@ -534,15 +554,17 @@ namespace StubDb
             //TODO implement
         }
 
-        private void UpdateConnections(EntityTypeCollection types)
+        private void UpdateNamedConnections(EntityTypeCollection types)
         {
-            foreach (var type in types)
+            foreach (var keyValuePair in types)
             {
-                var typeConnections = type.Value.Connections.ToList();
+                var type = keyValuePair.Value;
+                var typeConnections = type.Connections.ToList();
+                
                 foreach (var connection in typeConnections)
                 {
                     var connectionToCurrentTypeFromReferencingType =
-                        connection.ConnectedType.Connections.Where(x => x.ConnectedType == type.Value);
+                        connection.ConnectedType.Connections.Where(x => x.ConnectedType == type);
 
                     if (connection.IsNamedConnection)
                     {
@@ -550,7 +572,7 @@ namespace StubDb
                         var excpetionMessage =
                             String.Format(
                                 "There are a few properties of type {0} referencing type {1}. In this case type {1} should not have references to type {0}",
-                                type.Value.Type.Name, connection.ConnectedType.Type.Name);
+                                type.Type.Name, connection.ConnectedType.Type.Name);
 
                         Check.That(!connectionToCurrentTypeFromReferencingType.Any(), excpetionMessage);
                     }
@@ -558,12 +580,9 @@ namespace StubDb
                     {
                         if (!connectionToCurrentTypeFromReferencingType.Any())
                         {
-                            var missingBackwardConnection = new EntityConnectionInfo();
+                            var missingBackwardConnection = new EntityConnectionInfo(connection.ConnectedType, type, null, false);
 
-                            missingBackwardConnection.ConnectedType = type.Value;
-                            missingBackwardConnection.IsMultipleConnection = false;
                             missingBackwardConnection.IsNamedConnection = false;
-                            missingBackwardConnection.PropertyName = null;
 
                             connection.ConnectedType.Connections.Add(missingBackwardConnection);
                         }
