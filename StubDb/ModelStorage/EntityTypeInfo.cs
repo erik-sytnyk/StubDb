@@ -32,7 +32,13 @@ namespace StubDb.ModelStorage
 
         public IEnumerable<PropertyInfo> GetProperties()
         {
+            //TODO do not return not mapped properties
             return EntityTypeManager.GetProperties(this.Type);
+        }
+
+        public IEnumerable<PropertyInfo> GetSimpleWritableProperties()
+        {
+            return EntityTypeManager.GetSimpleWritableProperties(this.Type);
         }
 
         public override bool Equals(object obj)

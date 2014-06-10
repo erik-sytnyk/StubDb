@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Ext.Core;
@@ -35,7 +36,7 @@ namespace StubDb
 
             ModelBuilder = new ModelBuilder(this);
 
-            var stubSets = EntityTypeManager.GetProperties(this.GetType()).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
+            var stubSets = this.GetStubSetProperties();
 
             foreach (var propertyInfo in stubSets)
             {
@@ -60,7 +61,7 @@ namespace StubDb
         {
             var result = (StubSet<TEntity>)null;
 
-            var property = EntityTypeManager.GetProperties(this.GetType()).SingleOrDefault(x => EntityTypeManager.IsStubSet(x.PropertyType) && x.PropertyType.GenericTypeArguments.First() == typeof(TEntity));
+            var property = this.GetStubSetProperties().SingleOrDefault(x => x.PropertyType.GenericTypeArguments.First() == typeof(TEntity));
 
             if (property != null)
             {
@@ -75,7 +76,7 @@ namespace StubDb
             var entityType = this.GetEntityType(entity.GetType());
 
             var id = entityType.GetEntityId(entity);
-            
+
             if (id != 0)
             {
                 entityType.SetEntityId(entity, 0);
@@ -145,7 +146,7 @@ namespace StubDb
                         connectedEntities.Add(item);
                     }
                 }
-                
+
                 if (connection.IsSingleConnection)
                 {
                     var connectedEntity = propertyInfo.GetValue(entity);
@@ -178,7 +179,7 @@ namespace StubDb
                         var existingConnectedEntity = this.Storage.Entities.GetById(connectedEntityId, connectedType);
                         if (existingConnectedEntity == null) //do not save existing connected entities
                         {
-                            this.Save(connectedEntity);   
+                            this.Save(connectedEntity);
                         }
                     }
 
@@ -195,7 +196,7 @@ namespace StubDb
         public void Remove(object entity)
         {
             var entityType = this.GetEntityType(entity.GetType());
-            
+
             var entityId = entityType.GetEntityId(entity);
 
             this.Remove(entityType.Type, entityId);
@@ -305,7 +306,7 @@ namespace StubDb
         {
             var typesToRegister = new Dictionary<string, Type>();
 
-            var stubSetProperties = EntityTypeManager.GetProperties(containerType).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
+            var stubSetProperties = GetStubSetProperties();
 
             foreach (var stubSetProperty in stubSetProperties)
             {
@@ -344,6 +345,7 @@ namespace StubDb
         private static void AddEntityTypes(Type type, Dictionary<string, Type> typesDict)
         {
             var properties = EntityTypeManager.GetProperties(type);
+
             foreach (var propertyInfo in properties)
             {
                 var entityType = (Type)null;
@@ -372,48 +374,42 @@ namespace StubDb
             var entityType = this.GetEntityType(entity.GetType());
             var entityId = entityType.GetEntityId(entity);
 
-            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
+            foreach (var propertyInfo in entityType.Type.GetProperties())
             {
                 var connection = entityType.Connections.SingleOrDefault(x => x.NavigationPropertyName == propertyInfo.Name);
 
                 if (connection == null) continue;
 
+                var connectedEntityType = connection.ConnectedType;
+                var connectionIds = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, connection.ConnectionName, entityId);
+
                 if (connection.IsMultipleConnection)
                 {
-                    var connectedEntityType = connection.ConnectedType;
-                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, connection.ConnectionName, entityId);
-
                     var newList = EntityTypeManager.CreateGenericList(connectedEntityType.Type);
 
-                    if (connections.Count > 0)
+                    foreach (var connectionId in connectionIds)
                     {
-                        foreach (var connectionId in connections)
+                        var entityToAdd = this.Storage.Entities.GetById(connectionId, connectedEntityType);
+
+                        Check.NotNull(entityToAdd, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedEntityType.Type.FullName, connectionId));
+
+                        if (dependenciesLevel > 0)
                         {
-                            var entityToAdd = this.Storage.Entities.GetById(connectionId, connectedEntityType);
+                            LoadNavigationProperties(dependenciesLevel - 1, entityToAdd);
+                        }
 
-                            Check.NotNull(entityToAdd, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedEntityType.Type.FullName, connectionId));
-
-                            if (dependenciesLevel > 0)
-                            {
-                                LoadNavigationProperties(dependenciesLevel - 1, entityToAdd);
-                            }
-
-                            newList.Add(entityToAdd);
-                        }                        
+                        newList.Add(entityToAdd);
                     }
 
                     propertyInfo.SetValue(entity, newList);
                 }
                 else
                 {
-                    var connectedEntityType = connection.ConnectedType;
-                    var connections = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, connection.ConnectionName, entityId);
+                    Check.That(connectionIds.Count <= 1, "Multiple connections for one to one relation");
 
-                    Check.That(connections.Count <= 1, "Multiple connections for one to one relation");
-
-                    if (connections.Count == 1)
+                    if (connectionIds.Count == 1)
                     {
-                        var connectedId = connections.Single();
+                        var connectedId = connectionIds.Single();
 
                         var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedEntityType);
 
@@ -443,7 +439,7 @@ namespace StubDb
         {
             var entityType = this.GetEntityType(entity.GetType());
 
-            foreach (var propertyInfo in EntityTypeManager.GetProperties(entityType.Type))
+            foreach (var propertyInfo in entityType.Type.GetProperties())
             {
                 var connection = entityType.Connections.SingleOrDefault(x => x.NavigationPropertyName == propertyInfo.Name);
 
@@ -453,7 +449,7 @@ namespace StubDb
 
                 if (connection.HasNavigationIdProperty)
                 {
-                    connection.ClearNavigationIdProperty(entity);   
+                    connection.ClearNavigationIdProperty(entity);
                 }
             }
         }
@@ -478,7 +474,7 @@ namespace StubDb
                 foreach (var entity in entities)
                 {
                     result.Append(GlobalConstants.SpecialSymbols.Tab);
-                    result.AppendLine(GlobalConstants.SpecialSymbols.Tab + EntityToDisplayString(entity));
+                    result.AppendLine(GlobalConstants.SpecialSymbols.Tab + EntityToDisplayString(entityType, entity));
                 }
 
                 result.AppendLine("");
@@ -532,11 +528,11 @@ namespace StubDb
             return result.ToString();
         }
 
-        private string EntityToDisplayString(object entity)
+        private string EntityToDisplayString(EntityTypeInfo entityType, object entity)
         {
             var result = new StringBuilder();
 
-            var props = EntityTypeManager.GetSimpleWritableProperties(entity.GetType());
+            var props = entityType.GetSimpleWritableProperties();
 
             foreach (var propertyInfo in props)
             {
@@ -560,7 +556,7 @@ namespace StubDb
             {
                 var type = keyValuePair.Value;
                 var typeConnections = type.Connections.ToList();
-                
+
                 foreach (var connection in typeConnections)
                 {
                     var connectionToCurrentTypeFromReferencingType =
@@ -589,6 +585,11 @@ namespace StubDb
                     }
                 }
             }
+        }
+
+        private IEnumerable<PropertyInfo> GetStubSetProperties()
+        {
+            return EntityTypeManager.GetProperties(this.GetType()).Where(x => EntityTypeManager.IsStubSet(x.PropertyType)).ToList();
         }
 
         #endregion

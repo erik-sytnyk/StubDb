@@ -195,7 +195,7 @@ namespace StubDb.Persistence
 
             private IEnumerable<PropertyInfo> GetSimpleProperties(EntityTypeInfo entityType)
             {
-                return EntityTypeManager.GetSimpleWritableProperties(entityType.Type).OrderBy(x => x.Name);
+                return entityType.GetSimpleWritableProperties().OrderBy(x => x.Name);
             }
 
             private string GetPropertiesString(IEnumerable<PropertyInfo> properties)
