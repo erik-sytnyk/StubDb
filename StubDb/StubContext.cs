@@ -324,8 +324,6 @@ namespace StubDb
                 var typeInfo = this.Types.GetType(type);
                 this.Types.LoadConnections(typeInfo);
             }
-
-            this.UpdateNamedConnections(this.Types);
         }
 
         #region Helper functions
@@ -545,43 +543,6 @@ namespace StubDb
         private void CheckDataConsistency()
         {
             //TODO implement
-        }
-
-        private void UpdateNamedConnections(EntityTypeCollection types)
-        {
-            foreach (var keyValuePair in types)
-            {
-                var type = keyValuePair.Value;
-                var typeConnections = type.Connections.ToList();
-
-                foreach (var connection in typeConnections)
-                {
-                    var connectionToCurrentTypeFromReferencingType =
-                        connection.ConnectedType.Connections.Where(x => x.ConnectedType == type);
-
-                    if (connection.IsNamedConnection)
-                    {
-                        //there should be no navigation property referencing current type from connected type
-                        var excpetionMessage =
-                            String.Format(
-                                "There are a few properties of type {0} referencing type {1}. In this case type {1} should not have references to type {0}",
-                                type.Type.Name, connection.ConnectedType.Type.Name);
-
-                        Check.That(!connectionToCurrentTypeFromReferencingType.Any(), excpetionMessage);
-                    }
-                    else
-                    {
-                        if (!connectionToCurrentTypeFromReferencingType.Any())
-                        {
-                            var missingBackwardConnection = new EntityConnectionInfo(connection.ConnectedType, type, null, false);
-
-                            missingBackwardConnection.IsNamedConnection = false;
-
-                            connection.ConnectedType.Connections.Add(missingBackwardConnection);
-                        }
-                    }
-                }
-            }
         }
 
         private IEnumerable<PropertyInfo> GetStubSetProperties()

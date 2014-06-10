@@ -83,16 +83,5 @@ namespace StabDbTests
             Assert.AreEqual(typeNames.Count, 4);
         }
 
-        [TestMethod]
-        public void should_initialize_connection_for_type_when_there_is_no_navigation_property_in_the_type_but_there_is_one_in_connected_type()
-        {
-            var context = new ConnectionsRegistrationContext();
-            
-            var typeWithoutNavigationProperty =
-                context.Types.Single(x => x.Value.Type == typeof (EntityWithoutNavigationProperty)).Value;
-            
-            Assert.IsTrue(typeWithoutNavigationProperty.Connections.Count > 0);
-        }
-
     }
 }
