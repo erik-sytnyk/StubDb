@@ -50,6 +50,13 @@ namespace StabDbTests
 
             Assert.AreEqual(contractFromContext.Contractor.FirstName, "Sergey");
             Assert.AreEqual(contractFromContext.Employer.FirstName, "Masha");
+
+            context.Persons.Remove(sergey);
+
+            contractFromContext = context.Contracts.Query().First();
+
+            Assert.IsNull(contractFromContext.Contractor);
+            Assert.IsNotNull(contractFromContext.Employer);
         }
     }
 }

@@ -81,5 +81,10 @@ namespace StubDb.ModelStorage
         {
             this.IdProperty.SetValue(entity, id);
         }
+
+        public override string ToString()
+        {
+            return String.Format("TypeInfo for {0}", this.Type.Name);
+        }
     }
 }

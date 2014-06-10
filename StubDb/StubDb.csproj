@@ -52,7 +52,6 @@
     <Compile Include="ModelStorage\ContextStorage.cs" />
     <Compile Include="ModelStorage\EntityCollection.cs" />
     <Compile Include="ModelStorage\EntityCollectionEntry.cs" />
-    <Compile Include="ModelStorage\EntityConnection.cs" />
     <Compile Include="EntityTypeManager.cs" />
     <Compile Include="ModelStorage\EntityConnectionInfo.cs" />
     <Compile Include="ModelStorage\EntityTypeCollection.cs" />

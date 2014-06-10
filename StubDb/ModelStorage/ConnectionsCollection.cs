@@ -15,11 +15,21 @@ namespace StubDb.ModelStorage
         public EntityTypeInfo TypeSecond { get; set; }
         public string ConnectionName { get; set; }
 
-        public ConnectionData(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond, string connectionName)
+        private static string _keySeparator = "@";
+
+        public ConnectionData(EntityTypeInfo type1, EntityTypeInfo type2, string name)
         {
-            TypeFirst = typeFirst;
-            TypeSecond = typeSecond;
-            ConnectionName = connectionName;
+            if (GetTypeSortingOrder(type1, type2) >= 0)
+            {
+                TypeFirst = type1;
+                TypeSecond = type2;
+            }
+            else
+            {
+                TypeFirst = type2;
+                TypeSecond = type1;
+            }
+            ConnectionName = name;
         }
 
         public Dictionary<int, List<int>> GroupByIdFirst()
@@ -50,21 +60,59 @@ namespace StubDb.ModelStorage
             return _dictionaryByIdSecond;
         }
 
-        public void Add(int idFirst, int idSecond, bool checkExisting)
-        {
-            if (checkExisting)
+        public void AddConnection(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond, string connectionName, int idFirst, int idSecond, bool checkForExistingConnections)
+        {            
+            if (TypeFirst.UniqueName == typeFirst.UniqueName)
             {
-                var existingConnection = this.FirstOrDefault(x => x.Item1 == idFirst && x.Item2 == idSecond);
-                Check.That(existingConnection == null, "Trying to add existing connection");
+                if (checkForExistingConnections)
+                {
+                    var existingConnection = this.FirstOrDefault(x => x.Item1 == idFirst && x.Item2 == idSecond);
+                    Check.That(existingConnection == null, "Trying to add existing connection");
+                }
+                this.Add(new Tuple<int, int>(idFirst, idSecond));
             }
-            this.Add(new Tuple<int, int>(idFirst, idSecond));
+            else if (TypeFirst.UniqueName == typeSecond.UniqueName)
+            {
+                if (checkForExistingConnections)
+                {
+                    var existingConnection = this.FirstOrDefault(x => x.Item1 == idSecond && x.Item2 == idFirst);
+                    Check.That(existingConnection == null, "Trying to add existing connection");
+                }
+                this.Add(new Tuple<int, int>(idSecond, idFirst));
+            }
+            else
+            {
+                throw new ApplicationException("Adding entity connection for wrong entity types");
+            }
+
             this.ClearCache();
+        }
+
+        public string GetUniqueKey()
+        {
+            return String.Format("{1}{0}{2}{0}{3}", _keySeparator, TypeFirst.UniqueName, TypeSecond.UniqueName, ConnectionName);
         }
 
         public void ClearCache()
         {
             _dictionaryByIdFirst = null;
             _dictionaryByIdSecond = null;
+        }
+
+        private static int GetTypeSortingOrder(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond)
+        {
+            return String.Compare(typeFirst.UniqueName, typeSecond.UniqueName, StringComparison.Ordinal);
+        }
+
+        public static void ParseFromKey(string key, out string typeFirst, out string typeSecond, out string connectionName)
+        {
+            var parts = key.Split(new string[] { _keySeparator }, StringSplitOptions.None);
+
+            Check.That(parts.Length == 3, "Wrong key format");
+
+            typeFirst = parts[0];
+            typeSecond = parts[1];
+            connectionName = parts[2];
         }
     }
 
@@ -74,18 +122,38 @@ namespace StubDb.ModelStorage
 
         public void AddConnection(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond, string connectionName, int idFirst, int idSecond, bool checkForExistingConnections)
         {
-            var newConnection = new EntityConnection(typeFirst, typeSecond, connectionName, idFirst, idSecond);
+            var newConnection = new ConnectionData(typeFirst, typeSecond, connectionName);
 
             var key = newConnection.GetUniqueKey();
 
-            _storage.AddIfNoEntry(key, new ConnectionData(newConnection.TypeFirst, newConnection.TypeSecond, newConnection.ConnectionName));
+            _storage.AddIfNoEntry(key, newConnection);
 
-            _storage[key].Add(newConnection.IdFirst, newConnection.IdSecond, checkForExistingConnections);
+            _storage[key].AddConnection(typeFirst, typeSecond, connectionName, idFirst, idSecond, checkForExistingConnections);
+        }
+
+        public void RemoveConnectionsFor(EntityTypeInfo entityType, int entityId)
+        {
+            var clearCache = false;
+
+            foreach (var connectionData in _storage.Values)
+            {
+                if (connectionData.TypeFirst == entityType)
+                {
+                    _storage[connectionData.GetUniqueKey()].RemoveAll(x => x.Item1 == entityId);
+                    _storage[connectionData.GetUniqueKey()].ClearCache();
+                }
+
+                if (connectionData.TypeSecond == entityType)
+                {
+                    _storage[connectionData.GetUniqueKey()].RemoveAll(x => x.Item2 == entityId);
+                    _storage[connectionData.GetUniqueKey()].ClearCache();
+                }
+            }
         }
 
         public void RemoveConnectionsFor(EntityTypeInfo entityType, EntityTypeInfo connectedType, string connectionName, int entityId)
         {
-            var newConnection = new EntityConnection(entityType, connectedType, connectionName);
+            var newConnection = new ConnectionData(entityType, connectedType, connectionName);
             var key = newConnection.GetUniqueKey();
             if (_storage.ContainsKey(key))
             {
@@ -104,12 +172,12 @@ namespace StubDb.ModelStorage
         public List<int> GetConnectionsFor(EntityTypeInfo entityType, EntityTypeInfo connectedType, string connectionName, int entityId)
         {
             var result = new List<int>();
-            var newConnection = new EntityConnection(entityType, connectedType, connectionName);
+            var newConnection = new ConnectionData(entityType, connectedType, connectionName);
             var key = newConnection.GetUniqueKey();
 
             if (!_storage.ContainsKey(key)) return result;
 
-            var dict = newConnection.TypeFirst == entityType ?  _storage[key].GroupByIdFirst(): _storage[key].GroupByIdSecond();
+            var dict = newConnection.TypeFirst == entityType ? _storage[key].GroupByIdFirst() : _storage[key].GroupByIdSecond();
 
             if (dict.ContainsKey(entityId))
             {
@@ -121,7 +189,7 @@ namespace StubDb.ModelStorage
 
         public ConnectionData GetConnectionData(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond, String connectionName)
         {
-            var connection = new EntityConnection(typeFirst, typeSecond, connectionName);
+            var connection = new ConnectionData(typeFirst, typeSecond, connectionName);
             var key = connection.GetUniqueKey();
 
             if (_storage.ContainsKey(key))

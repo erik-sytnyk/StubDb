@@ -224,10 +224,7 @@ namespace StubDb
                 }
             }
 
-            foreach (var connection in entityType.Connections)
-            {
-                this.Storage.Connections.RemoveConnectionsFor(entityType, connection.ConnectedType, connection.ConnectionName, id);
-            }
+            this.Storage.Connections.RemoveConnectionsFor(entityType, id);
 
             this.Storage.Entities.Remove(id, entityType);
         }
