@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -46,6 +47,22 @@ namespace StabDbTests
                 context.Students.Add(student);
                 students.Add(student);
             }
+        }
+
+        [TestMethod]
+        public void CreateGenericListTest()
+        {
+            var time = base.MeasureOperationTime(() =>
+            {
+                var genericListType = typeof(List<>);
+                var concreteType = genericListType.MakeGenericType(typeof(string));
+                for (int i = 0; i < 1000000; i++)
+                {
+                    var newList = EntityTypeManager.CreateNew(concreteType);
+                }
+            });
+
+            Assert.IsNotNull(time);
         }
 
     }

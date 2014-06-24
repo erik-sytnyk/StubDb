@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StubDb", "StubDb\StubDb.csproj", "{23C4CB02-B413-40FE-AD94-C3E3B248FC64}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StabDbTests", "StabDbTests\StabDbTests.csproj", "{5EB620F1-4C3A-48B1-B4D2-10B82CA89BCA}"

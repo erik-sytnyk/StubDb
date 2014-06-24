@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using StabDbTests.TestContext;
 using StubDb;
-using Ext.Core;
 
 namespace StabDbTests
 {
