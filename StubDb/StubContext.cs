@@ -185,7 +185,14 @@ namespace StubDb
 
                     foreach (var connectedEntity in connectedEntities)
                     {
-                        this.Storage.Connections.AddConnection(entityType, connectedType, connection.ConnectionName, entityType.GetEntityId(entity), connectedType.GetEntityId(connectedEntity), DoDataConsistencyTest);
+                        var connectionType = connectedType;
+
+                        if (connectedType.DerivedTypes.Any())
+                        {
+                            connectionType = this.GetEntityType(connectedEntity.GetType());
+                        }
+
+                        this.Storage.Connections.AddConnection(entityType, connectionType, connection.ConnectionName, entityType.GetEntityId(entity), connectionType.GetEntityId(connectedEntity), DoDataConsistencyTest);
                     }
                 }
             }
@@ -241,6 +248,12 @@ namespace StubDb
             var entiytType = GetEntityType(typeof(T));
 
             var entities = this.Storage.Entities.GetEntities(entiytType);
+
+            foreach (var derivedType in entiytType.DerivedTypes)
+            {
+                var derivedEntities = this.Storage.Entities.GetEntities(derivedType);
+                entities.AddRange(derivedEntities);
+            }
 
             foreach (var entity in entities)
             {
@@ -324,6 +337,12 @@ namespace StubDb
                 var typeInfo = this.Types.GetType(type);
                 this.Types.LoadConnections(typeInfo);
             }
+
+            foreach (var type in this.Types)
+            {
+                var derivedTypes = this.Types.Where(x => x.Value.Type.IsSubclassOf(type.Value.Type)).Select(x => x.Value).ToList();
+                type.Value.DerivedTypes = derivedTypes;
+            }
         }
 
         #region Helper functions
@@ -376,55 +395,67 @@ namespace StubDb
                 if (connection == null) continue;
 
                 var connectedEntityType = connection.ConnectedType;
-                var connectionIds = this.Storage.Connections.GetConnectionsFor(entityType, connectedEntityType, connection.ConnectionName, entityId);
+                
+                var connectedTypes = new List<EntityTypeInfo> {connectedEntityType};
+                connectedTypes.AddRange(connectedEntityType.DerivedTypes);
 
                 if (connection.IsMultipleConnection)
                 {
                     var newList = EntityTypeManager.CreateGenericList(connectedEntityType.Type);
 
-                    foreach (var connectionId in connectionIds)
+                    foreach (var connectedType in connectedTypes)
                     {
-                        var entityToAdd = this.Storage.Entities.GetById(connectionId, connectedEntityType);
+                        var connectionIds = this.Storage.Connections.GetConnectionsFor(entityType, connectedType, connection.ConnectionName, entityId);
 
-                        Check.NotNull(entityToAdd, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedEntityType.Type.FullName, connectionId));
-
-                        if (dependenciesLevel > 0)
+                        foreach (var connectionId in connectionIds)
                         {
-                            LoadNavigationProperties(dependenciesLevel - 1, entityToAdd);
-                        }
+                            var entityToAdd = this.Storage.Entities.GetById(connectionId, connectedType);
 
-                        newList.Add(entityToAdd);
+                            Check.NotNull(entityToAdd, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedType.Type.FullName, connectionId));
+
+                            if (dependenciesLevel > 0)
+                            {
+                                LoadNavigationProperties(dependenciesLevel - 1, entityToAdd);
+                            }
+
+                            newList.Add(entityToAdd);
+                        }                        
                     }
 
                     propertyInfo.SetValue(entity, newList);
                 }
-                else
+                
+                if (!connection.IsMultipleConnection)
                 {
-                    Check.That(connectionIds.Count <= 1, "Multiple connections for one to one relation");
+                    //clear property
+                    propertyInfo.SetValue(entity, null);
 
-                    if (connectionIds.Count == 1)
+                    foreach (var connectedType in connectedTypes)
                     {
-                        var connectedId = connectionIds.Single();
+                        var connectionIds = this.Storage.Connections.GetConnectionsFor(entityType, connectedType, connection.ConnectionName, entityId);
 
-                        var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedEntityType);
+                        Check.That(connectionIds.Count <= 1, "Multiple connections for one to one relation");
 
-                        Check.NotNull(connectedEntity, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedEntityType.Type.FullName, connectedId));
-
-                        if (dependenciesLevel > 0)
+                        if (connectionIds.Count == 1)
                         {
-                            LoadNavigationProperties(dependenciesLevel - 1, connectedEntity);
-                        }
+                            var connectedId = connectionIds.Single();
 
-                        propertyInfo.SetValue(entity, connectedEntity);
+                            var connectedEntity = this.Storage.Entities.GetById(connectedId, connectedType);
 
-                        if (connection.HasNavigationIdProperty)
-                        {
-                            connection.SetNavigationIdProperty(entity, connectedId);
-                        }
-                    }
-                    else //no connection, so clear property
-                    {
-                        propertyInfo.SetValue(entity, null);
+                            Check.NotNull(connectedEntity, String.Format("Cannot find entity of type {0} with ID equals to {1}.", connectedType.Type.FullName, connectedId));
+
+                            if (dependenciesLevel > 0)
+                            {
+                                LoadNavigationProperties(dependenciesLevel - 1, connectedEntity);
+                            }
+
+                            propertyInfo.SetValue(entity, connectedEntity);
+
+                            if (connection.HasNavigationIdProperty)
+                            {
+                                connection.SetNavigationIdProperty(entity, connectedId);
+                            }
+                        }                        
                     }
                 }
             }

@@ -17,8 +17,12 @@ namespace StabDbTests
             var context = new TestStubContext();
             var initTime = base.MeasureOperationTime(() => context.SeedData(InitContext));
             var queryTime = base.MeasureOperationTime(() => context.Students.Query());
+            
             Console.WriteLine(initTime);
+            Assert.IsTrue(initTime.TotalMilliseconds < 160);
+
             Console.WriteLine(queryTime);
+            Assert.IsTrue(queryTime.TotalMilliseconds < 70);
         }
 
         public void InitContext(StubContext inputContext)

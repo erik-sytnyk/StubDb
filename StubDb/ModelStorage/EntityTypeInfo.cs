@@ -25,9 +25,12 @@ namespace StubDb.ModelStorage
 
         public List<EntityConnectionInfo> Connections { get; set; }
 
+        public List<EntityTypeInfo> DerivedTypes { get; set; }
+
         public EntityTypeInfo()
         {
             Connections = new List<EntityConnectionInfo>();
+            DerivedTypes = new List<EntityTypeInfo>();
         }
 
         public IEnumerable<PropertyInfo> GetProperties()
