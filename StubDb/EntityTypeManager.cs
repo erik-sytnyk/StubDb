@@ -55,25 +55,7 @@ namespace StubDb
         {
             var result = type.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IStubSet<>));
             return result;
-        }
-        
-        public static bool IsEnumerableEntityType(Type type)
-        {
-            var genericType = GetEnumerableEntityType(type);
-            return genericType != null;
-        }
-        
-        public static Type GetEnumerableEntityType(Type type)
-        {
-            var result = GetEnumerableType(type);
-
-            if (result != null && IsSimpleType(result))
-            {
-                result = null;
-            }
-
-            return result;
-        }
+        }              
 
         public static Type GetEnumerableType(Type type)
         {

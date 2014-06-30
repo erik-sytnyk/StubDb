@@ -55,6 +55,7 @@
     <Compile Include="BaseTest.cs" />
     <Compile Include="EntitiesWithInheritanceTest.cs" />
     <Compile Include="EntityTypeManagerTest.cs" />
+    <Compile Include="IgnoreTest.cs" />
     <Compile Include="InheritanceTest.cs" />
     <Compile Include="PerformanceTest.cs" />
     <Compile Include="ObjectCloningTest.cs" />

@@ -8,6 +8,13 @@ namespace StubDb.ModelStorage
 {
     public class EntityTypeCollection : Dictionary<string, EntityTypeInfo>
     {
+        public List<Type> IgnoredTypes { get; set; }
+
+        public EntityTypeCollection()
+        {
+            IgnoredTypes = new List<Type>();
+        }
+
         public void Add(Type type)
         {
             var entityTypeInfo = new EntityTypeInfo();
@@ -42,16 +49,15 @@ namespace StubDb.ModelStorage
 
             foreach (var propertyInfo in entityTypeInfo.GetProperties())
             {
-                var enumerableEntityType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
+                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
 
                 var connectionInfo = (EntityConnectionInfo)null;
 
-                if (enumerableEntityType != null)
+                if (enumerableType != null && this.IsEntityType(enumerableType))
                 {
-                    connectionInfo = new EntityConnectionInfo(entityTypeInfo, this.GetType(enumerableEntityType), propertyInfo.Name, true);
-
+                    connectionInfo = new EntityConnectionInfo(entityTypeInfo, this.GetType(enumerableType), propertyInfo.Name, true);
                 }
-                else if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(propertyInfo.PropertyType))
+                else if (this.IsEntityType(propertyInfo.PropertyType))
                 {
                     connectionInfo = new EntityConnectionInfo(entityTypeInfo, this.GetType(propertyInfo.PropertyType), propertyInfo.Name, false);
                 }
@@ -90,5 +96,12 @@ namespace StubDb.ModelStorage
         }
 
         #endregion
+
+        public bool IsEntityType(Type type)
+        {
+            if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(type) && !this.IgnoredTypes.Contains(type)) return true;
+
+            return false;
+        }
     }
 }

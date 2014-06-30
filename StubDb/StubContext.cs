@@ -35,6 +35,7 @@ namespace StubDb
             RequiredDependancies = new List<RequiredDependancy>();
 
             ModelBuilder = new ModelBuilder(this);
+            this.ConfigureModel();
 
             var stubSets = this.GetStubSetProperties();
 
@@ -45,9 +46,11 @@ namespace StubDb
                 propertyInfo.SetValue(this, stubSet);
             }
 
-            RegisterEntityTypes(this.GetType());
+            ModelBuilder.BeforeRegisteringTypes();
 
-            this.ConfigureModel();
+            RegisterEntityTypes(this.GetType(), ModelBuilder.IgnoredTypes);
+
+            ModelBuilder.AfterRegisteringTypes();
 
             PersistenceProvider = new SerializeToFilePersistenceProvider();
         }
@@ -312,7 +315,7 @@ namespace StubDb
             }
         }
 
-        public void RegisterEntityTypes(Type containerType)
+        public void RegisterEntityTypes(Type containerType, List<Type> ignoredTypes)
         {
             var typesToRegister = new Dictionary<string, Type>();
 
@@ -322,10 +325,11 @@ namespace StubDb
             {
                 var typeOfStubSet = stubSetProperty.PropertyType.GetGenericArguments().First();
                 typesToRegister.AddIfNoEntry(typeOfStubSet.GetId(), typeOfStubSet);
-                AddEntityTypes(typeOfStubSet, typesToRegister);
+                AddEntityTypes(typeOfStubSet, typesToRegister, ignoredTypes);
             }
 
             this.Types = new EntityTypeCollection();
+            this.Types.IgnoredTypes = ignoredTypes;
 
             foreach (var keyValuePair in typesToRegister)
             {
@@ -356,7 +360,7 @@ namespace StubDb
             return result;
         }
 
-        private static void AddEntityTypes(Type type, Dictionary<string, Type> typesDict)
+        private void AddEntityTypes(Type type, Dictionary<string, Type> typesDict, List<Type> typesToIgnore)
         {
             var properties = EntityTypeManager.GetProperties(type);
 
@@ -364,21 +368,24 @@ namespace StubDb
             {
                 var entityType = (Type)null;
 
-                var enumerableEntityType = EntityTypeManager.GetEnumerableEntityType(propertyInfo.PropertyType);
+                var enumerableType = EntityTypeManager.GetEnumerableType(propertyInfo.PropertyType);
 
-                if (enumerableEntityType != null)
+                if (enumerableType != null)
                 {
-                    entityType = enumerableEntityType;
+                    if (this.Types.IsEntityType(enumerableType))
+                    {
+                        entityType = enumerableType;
+                    }
                 }
                 else if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(propertyInfo.PropertyType))
                 {
                     entityType = propertyInfo.PropertyType;
                 }
 
-                if (entityType != null && !typesDict.ContainsKey(entityType.GetId()))
+                if (entityType != null && !typesDict.ContainsKey(entityType.GetId()) && !typesToIgnore.Contains(entityType))
                 {
                     typesDict.AddIfNoEntry(entityType.GetId(), entityType);
-                    AddEntityTypes(entityType, typesDict);
+                    AddEntityTypes(entityType, typesDict, typesToIgnore);
                 }
             }
         }
@@ -390,6 +397,13 @@ namespace StubDb
 
             foreach (var propertyInfo in entityType.Type.GetProperties())
             {
+                if (this.Types.IgnoredTypes.Contains(propertyInfo.PropertyType))
+                {
+                    //TODO do deep clone
+                    //clone ignored types
+                    propertyInfo.SetValue(entity, EntityTypeManager.CloneObject(propertyInfo.GetValue(entity)));
+                }
+
                 var connection = entityType.Connections.SingleOrDefault(x => x.NavigationPropertyName == propertyInfo.Name);
 
                 if (connection == null) continue;
