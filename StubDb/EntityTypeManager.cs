@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Ext.Core;
+using Ext.Core.Mapping;
 using Ext.Core.Reflection;
 
 namespace StubDb
@@ -80,6 +81,15 @@ namespace StubDb
         public static object CloneObject(object obj)
         {
             return ReflectionHelper.CloneObject(obj);
+        }
+
+        public static object DeepCloneObject(object obj)
+        {
+            var clone = CloneObject(obj);
+            
+            MappingHelper.Map(clone, obj);
+
+            return clone;
         }
 
         public static object CreateNew(Type type)

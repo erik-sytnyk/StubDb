@@ -13,13 +13,13 @@ namespace StubDb
 
         private List<Tuple<Type, Type>> RequiredDependancies { get; set; }
         
-        internal List<Type> IgnoredTypes { get; set; }
+        internal List<IgnoredTypeInfo> IgnoredTypes { get; set; }
 
         public ModelBuilder(StubContext context)
         {
             Context = context;
             RequiredDependancies = new List<Tuple<Type, Type>>();
-            IgnoredTypes = new List<Type>();
+            IgnoredTypes = new List<IgnoredTypeInfo>();
         }
 
         public void EntityHasRequiredDependancy<TEntity>(Expression<Func<TEntity, object>> dependantExpression)
@@ -52,9 +52,9 @@ namespace StubDb
             Context.RequiredDependancies.Add(dependancy);
         }
 
-        public void IgnoreType(Type typeToIgnore)
+        public void NotEntityType(Type type, bool persistValue)
         {
-            this.IgnoredTypes.Add(typeToIgnore);
+            this.IgnoredTypes.Add(new IgnoredTypeInfo(type, persistValue));
         }
 
         public void BeforeRegisteringTypes()

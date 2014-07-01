@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{23C4CB02-B413-40FE-AD94-C3E3B248FC64}</ProjectGuid>
+    <ProjectGuid>{C7ECD680-AC41-4B26-8C75-12CB816048EF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>StubDb</RootNamespace>
-    <AssemblyName>StubDb</AssemblyName>
+    <RootNamespace>StubDb.Store</RootNamespace>
+    <AssemblyName>StubDb.Store</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
@@ -32,9 +32,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Ext.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Ext.Core">
       <HintPath>..\packages\Ext.Core.0.2.17\lib\net45\Ext.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.5.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -45,27 +47,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ModelStorage\ConnectionsCollection.cs" />
-    <Compile Include="ModelStorage\ContextStorage.cs" />
-    <Compile Include="ModelStorage\EntityCollection.cs" />
-    <Compile Include="ModelStorage\EntityCollectionEntry.cs" />
-    <Compile Include="EntityTypeManager.cs" />
-    <Compile Include="ModelStorage\EntityConnectionInfo.cs" />
-    <Compile Include="ModelStorage\EntityTypeCollection.cs" />
-    <Compile Include="ModelStorage\EntityTypeInfo.cs" />
-    <Compile Include="ModelStorage\IgnoredTypeInfo.cs" />
-    <Compile Include="Persistence\IContextStoragePersistenceProvider.cs" />
-    <Compile Include="ModelBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ModelStorage\RequiredDependancy.cs" />
-    <Compile Include="StubContext.cs" />
-    <Compile Include="StubSet.cs" />
+    <Compile Include="SerializeToFilePersistenceProvider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StubDb\StubDb.csproj">
+      <Project>{23c4cb02-b413-40fe-ad94-c3e3b248fc64}</Project>
+      <Name>StubDb</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

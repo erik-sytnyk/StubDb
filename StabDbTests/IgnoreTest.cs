@@ -32,6 +32,13 @@ namespace StabDbTests
             public string FirstName { get; set; }
             public string LastName { get; set; }
             public Address Address { get; set; }
+            public TempInfo Temp { get; set; }
+        }
+
+        public class TempInfo
+        {
+            public string Temp1 { get; set; } 
+            public string Temp2 { get; set; } 
         }
 
         public class TestContext : StubContext
@@ -42,7 +49,8 @@ namespace StabDbTests
             {
                 base.ConfigureModel();
                 
-                this.ModelBuilder.IgnoreType(typeof(Address));
+                this.ModelBuilder.NotEntityType(typeof(Address), true);
+                this.ModelBuilder.NotEntityType(typeof(TempInfo), false);
             }
         }
 
@@ -59,7 +67,13 @@ namespace StabDbTests
                     Street = "Uralskaya 9",
                     Town = "Dnepropetrovsk",
                     Country = "Ukraine"
+                },
+                Temp = new TempInfo()
+                {
+                    Temp1 = "XXX",
+                    Temp2 = "YYY"
                 }
+                
             };
 
             var olga = new User()
@@ -71,6 +85,11 @@ namespace StabDbTests
                     Street = "Sholohova 39",
                     Town = "Dnepropetrovsk",
                     Country = "Ukraine"
+                },
+                Temp = new TempInfo()
+                {
+                    Temp1 = "XXX",
+                    Temp2 = "YYY"
                 }
             };
 
@@ -98,6 +117,33 @@ namespace StabDbTests
             var userFromContext = context.Users.Query().First();
 
             Assert.AreNotEqual("USA", userFromContext.Address.Country);
+        }
+
+        [TestMethod]
+        public void should_allow_overriding_of_ignored_types()
+        {
+            var context = new TestContext();
+            InitContext(context);
+
+            var user = context.Users.Query().First();
+            user.Address = new Address() {Country = "UK", Street = "Baker 36", Town = "London"};
+
+            context.Users.Update(user);
+
+            var userAfterUpdate = context.Users.Query().First();
+
+            Assert.AreEqual(userAfterUpdate.Address.Country, "UK");
+        }
+
+        [TestMethod]
+        public void should_not_store_ignored_types_if_specified()
+        {
+            var context = new TestContext();
+            InitContext(context);
+
+            var user = context.Users.Query().First();
+
+            Assert.IsNull(user.Temp);
         }
     }
 }

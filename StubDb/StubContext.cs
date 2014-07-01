@@ -51,8 +51,6 @@ namespace StubDb
             RegisterEntityTypes(this.GetType(), ModelBuilder.IgnoredTypes);
 
             ModelBuilder.AfterRegisteringTypes();
-
-            PersistenceProvider = new SerializeToFilePersistenceProvider();
         }
 
         public virtual void ConfigureModel()
@@ -78,12 +76,8 @@ namespace StubDb
         {
             var entityType = this.GetEntityType(entity.GetType());
 
-            var id = entityType.GetEntityId(entity);
-
-            if (id != 0)
-            {
-                entityType.SetEntityId(entity, 0);
-            }
+            //set default id value to mark entity as new
+            entityType.SetEntityId(entity, 0);
 
             this.Save(entity);
         }
@@ -105,7 +99,14 @@ namespace StubDb
             var isExistingEntity = existingEntity != null;
             if (!isExistingEntity)
             {
-                var newId = this.Storage.Entities.GetAvailableIdForEntityType(entityType);
+                var idType = entityType;
+
+                if (entityType.BaseEntityType != null)
+                {
+                    idType = entityType.BaseEntityType;
+                }
+
+                var newId = this.Storage.Entities.GetAvailableIdForEntityType(idType);
 
                 entityType.SetEntityId(entity, newId);
 
@@ -270,6 +271,7 @@ namespace StubDb
 
         public void SaveData()
         {
+            Check.NotNull(this.PersistenceProvider, "Persistence provider is not initialized");
             PersistenceProvider.SaveContext(Storage, Types);
         }
 
@@ -277,6 +279,7 @@ namespace StubDb
         {
             try
             {
+                Check.NotNull(this.PersistenceProvider, "Persistence provider is not initialized");
                 PersistenceProvider.LoadContext(this.Storage, Types);
                 this.CheckDataConsistency();
             }
@@ -315,7 +318,7 @@ namespace StubDb
             }
         }
 
-        public void RegisterEntityTypes(Type containerType, List<Type> ignoredTypes)
+        public void RegisterEntityTypes(Type containerType, List<IgnoredTypeInfo> ignoredTypes)
         {
             var typesToRegister = new Dictionary<string, Type>();
 
@@ -345,7 +348,12 @@ namespace StubDb
             foreach (var type in this.Types)
             {
                 var derivedTypes = this.Types.Where(x => x.Value.Type.IsSubclassOf(type.Value.Type)).Select(x => x.Value).ToList();
+
+                var baseTypes = this.Types.Where(x => type.Value.Type.IsSubclassOf(x.Value.Type)).Select(x => x.Value).ToList();
+                Check.That(baseTypes.Count() <= 1, "Currently StubDb does not support more than one level of inheritance for registered Entity Types");
+
                 type.Value.DerivedTypes = derivedTypes;
+                type.Value.BaseEntityType = baseTypes.FirstOrDefault();
             }
         }
 
@@ -360,7 +368,7 @@ namespace StubDb
             return result;
         }
 
-        private void AddEntityTypes(Type type, Dictionary<string, Type> typesDict, List<Type> typesToIgnore)
+        private void AddEntityTypes(Type type, Dictionary<string, Type> typesDict, List<IgnoredTypeInfo> typesToIgnore)
         {
             var properties = EntityTypeManager.GetProperties(type);
 
@@ -382,7 +390,7 @@ namespace StubDb
                     entityType = propertyInfo.PropertyType;
                 }
 
-                if (entityType != null && !typesDict.ContainsKey(entityType.GetId()) && !typesToIgnore.Contains(entityType))
+                if (entityType != null && !typesDict.ContainsKey(entityType.GetId()) && typesToIgnore.All(x => x.Type != entityType))
                 {
                     typesDict.AddIfNoEntry(entityType.GetId(), entityType);
                     AddEntityTypes(entityType, typesDict, typesToIgnore);
@@ -397,11 +405,20 @@ namespace StubDb
 
             foreach (var propertyInfo in entityType.Type.GetProperties())
             {
-                if (this.Types.IgnoredTypes.Contains(propertyInfo.PropertyType))
+                var ignoredType = this.Types.GetIgnoredTypeInfo(propertyInfo.PropertyType);
+
+                if (ignoredType != null)
                 {
-                    //TODO do deep clone
-                    //clone ignored types
-                    propertyInfo.SetValue(entity, EntityTypeManager.CloneObject(propertyInfo.GetValue(entity)));
+                    if (ignoredType.Persist)
+                    {
+                        var clone = EntityTypeManager.DeepCloneObject(propertyInfo.GetValue(entity));
+                        propertyInfo.SetValue(entity, clone);   
+                    }
+                    else
+                    {
+                        propertyInfo.SetValue(entity, null);
+                    }
+                    continue;
                 }
 
                 var connection = entityType.Connections.SingleOrDefault(x => x.NavigationPropertyName == propertyInfo.Name);
@@ -409,8 +426,8 @@ namespace StubDb
                 if (connection == null) continue;
 
                 var connectedEntityType = connection.ConnectedType;
-                
-                var connectedTypes = new List<EntityTypeInfo> {connectedEntityType};
+
+                var connectedTypes = new List<EntityTypeInfo> { connectedEntityType };
                 connectedTypes.AddRange(connectedEntityType.DerivedTypes);
 
                 if (connection.IsMultipleConnection)
@@ -433,12 +450,12 @@ namespace StubDb
                             }
 
                             newList.Add(entityToAdd);
-                        }                        
+                        }
                     }
 
                     propertyInfo.SetValue(entity, newList);
                 }
-                
+
                 if (!connection.IsMultipleConnection)
                 {
                     //clear property
@@ -469,7 +486,7 @@ namespace StubDb
                             {
                                 connection.SetNavigationIdProperty(entity, connectedId);
                             }
-                        }                        
+                        }
                     }
                 }
             }

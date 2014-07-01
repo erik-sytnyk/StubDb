@@ -8,11 +8,11 @@ namespace StubDb.ModelStorage
 {
     public class EntityTypeCollection : Dictionary<string, EntityTypeInfo>
     {
-        public List<Type> IgnoredTypes { get; set; }
+        public List<IgnoredTypeInfo> IgnoredTypes { get; set; }
 
         public EntityTypeCollection()
         {
-            IgnoredTypes = new List<Type>();
+            IgnoredTypes = new List<IgnoredTypeInfo>();
         }
 
         public void Add(Type type)
@@ -53,9 +53,12 @@ namespace StubDb.ModelStorage
 
                 var connectionInfo = (EntityConnectionInfo)null;
 
-                if (enumerableType != null && this.IsEntityType(enumerableType))
+                if (enumerableType != null)
                 {
-                    connectionInfo = new EntityConnectionInfo(entityTypeInfo, this.GetType(enumerableType), propertyInfo.Name, true);
+                    if (this.IsEntityType(enumerableType))
+                    {
+                        connectionInfo = new EntityConnectionInfo(entityTypeInfo, this.GetType(enumerableType), propertyInfo.Name, true);   
+                    }
                 }
                 else if (this.IsEntityType(propertyInfo.PropertyType))
                 {
@@ -99,9 +102,19 @@ namespace StubDb.ModelStorage
 
         public bool IsEntityType(Type type)
         {
-            if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(type) && !this.IgnoredTypes.Contains(type)) return true;
+            if (!EntityTypeManager.IsSimpleOrSimpleEnumerableType(type) && this.IgnoredTypes.All(x => x.Type != type)) return true;
 
             return false;
+        }
+
+        public bool IsIgnoredType(Type type)
+        {
+            return IgnoredTypes.Any(x => x.Type == type);
+        }
+
+        public IgnoredTypeInfo GetIgnoredTypeInfo(Type type)
+        {
+            return IgnoredTypes.SingleOrDefault(x => x.Type == type);
         }
     }
 }

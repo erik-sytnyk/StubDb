@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Contexts;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -180,6 +181,18 @@ namespace StabDbTests
             var session = context.Sessions.Query().FirstOrDefault();
 
             Assert.IsNotNull(session.FavoriteCriterion);
+        }
+
+        [TestMethod]
+        public void should_use_base_type_to_track_id()
+        {
+            var context = new TestContext();
+
+            InitTestData(context);
+
+            var criteria = context.Criteria.Query().ToList();
+
+            Assert.AreEqual(criteria.Count, criteria.Select(x => x.Id).Distinct().Count());
         }
     }
 }

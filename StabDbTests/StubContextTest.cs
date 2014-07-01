@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using StubDb;
+using StubDb.Persistence;
 
 namespace StabDbTests
 {
@@ -94,6 +95,8 @@ namespace StabDbTests
         public void should_save_and_load_context()
         {
             var context = InitializeTestContext(new TestStubContext());
+
+            context.PersistenceProvider = new SerializeToFilePersistenceProvider();
 
             context.SaveData();
 

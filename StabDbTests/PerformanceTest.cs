@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Ext.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using StabDbTests.TestContext;
 using StubDb;
@@ -17,11 +18,11 @@ namespace StabDbTests
             var context = new TestStubContext();
             var initTime = base.MeasureOperationTime(() => context.SeedData(InitContext));
             var queryTime = base.MeasureOperationTime(() => context.Students.Query());
-            
-            Console.WriteLine(initTime);
+
+            Console.WriteLine("Init time: {0}".FormatString(initTime));
             //Assert.IsTrue(initTime.TotalMilliseconds < 160);
 
-            Console.WriteLine(queryTime);
+            Console.WriteLine("Query time: {0}".FormatString(queryTime));
             //Assert.IsTrue(queryTime.TotalMilliseconds < 70);
         }
 
