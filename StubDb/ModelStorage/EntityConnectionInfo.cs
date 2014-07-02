@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Linq;
+using System.Reflection;
 using Ext.Core;
 
 namespace StubDb.ModelStorage
@@ -49,7 +51,25 @@ namespace StubDb.ModelStorage
             this.ConnectedType = connectedType;
             this.NavigationPropertyName = navigationPropertyName;
 
-            this.NavigationIdProperty = EntityTypeManager.GetEntityNavigationIdProperty(entityType.Type, connectedType.Type);
+            var navigationIdProperty = GetNavigationIdProperty(entityType, navigationPropertyName);
+
+            this.NavigationIdProperty = navigationIdProperty;
+        }
+
+        private static PropertyInfo GetNavigationIdProperty(EntityTypeInfo entityType, string navigationPropertyName)
+        {
+            var navigationTypeNamePlusId = String.Format("{0}Id", navigationPropertyName);
+
+            var result =
+                EntityTypeManager.GetProperties(entityType.Type)
+                    .SingleOrDefault(x => x.Name.Equals(navigationTypeNamePlusId, StringComparison.OrdinalIgnoreCase));
+
+            if (result != null)
+            {
+                Check.That(result.PropertyType == typeof (int) || result.PropertyType == typeof (int?),
+                    "Navigation ID property is not of type integer");
+            }
+            return result;
         }
     }
 }

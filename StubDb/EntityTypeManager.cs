@@ -109,19 +109,5 @@ namespace StubDb
 
             return result;
         }
-
-        public static PropertyInfo GetEntityNavigationIdProperty(Type type, Type navigationType)
-        {
-            var navigationTypeNamePlusId = String.Format("{0}Id", navigationType.Name);
-
-            var result = EntityTypeManager.GetProperties(type).SingleOrDefault(x => x.Name.Equals(navigationTypeNamePlusId, StringComparison.OrdinalIgnoreCase));
-
-            if (result != null)
-            {
-                Check.That(result.PropertyType == typeof (int) || result.PropertyType == typeof(int?), "Navigation ID property is not of type integer");
-            }
-
-            return result;
-        }
     }
 }

@@ -14,8 +14,8 @@ namespace StabDbTests
         {
             public int Id { get; set; }
             public string Name { get; set; }
-            public int InstructorId { get; set; }
-            public Instructor Instructor { get; set; }
+            public int CourseInstructorId { get; set; }
+            public Instructor CourseInstructor { get; set; }
         }
 
         public class Instructor
@@ -44,12 +44,12 @@ namespace StabDbTests
             var olga = new Instructor() {FirstName = "Olga", LastName = "Zabelina"};
             context.Instructors.Add(olga);
 
-            var chemistry = new Course() {Name = "Chemistry", Instructor = olga};
+            var chemistry = new Course() {Name = "Chemistry", CourseInstructor = olga};
             context.Courses.Add(chemistry);
 
             var chemistryFromContext = context.Courses.Query().Single(x => x.Name == "Chemistry");
 
-            Assert.AreEqual(chemistryFromContext.InstructorId, olga.Id);
+            Assert.AreEqual(chemistryFromContext.CourseInstructorId, olga.Id);
         }
 
         [TestMethod]
@@ -63,13 +63,13 @@ namespace StabDbTests
             var olga = new Instructor() { FirstName = "Olga", LastName = "Zabelina" };
             context.Instructors.Add(olga);
 
-            var chemistry = new Course() { Name = "Chemistry", InstructorId = olga.Id };
+            var chemistry = new Course() { Name = "Chemistry", CourseInstructorId = olga.Id };
             context.Courses.Add(chemistry);
 
             var chemistryFromContext = context.Courses.Query().Single(x => x.Name == "Chemistry");
 
-            Assert.AreEqual(chemistryFromContext.Instructor.FirstName, olga.FirstName);
-            Assert.AreEqual(chemistryFromContext.Instructor.LastName, olga.LastName);
+            Assert.AreEqual(chemistryFromContext.CourseInstructor.FirstName, olga.FirstName);
+            Assert.AreEqual(chemistryFromContext.CourseInstructor.LastName, olga.LastName);
         }
     }
 }
