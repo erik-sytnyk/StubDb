@@ -194,5 +194,25 @@ namespace StabDbTests
 
             Assert.AreEqual(criteria.Count, criteria.Select(x => x.Id).Distinct().Count());
         }
+
+        [TestMethod]
+        public void should_update_multiple_connections_of_base_class()
+        {
+            var context = new TestContext();
+
+            InitTestData(context);
+
+            var session = context.Sessions.Query().FirstOrDefault();
+
+            var hslA = context.CriteriaB.Query().Single(x => x.Name == "HSLA");
+
+            session.Criteria.Add(hslA);
+
+            context.Sessions.Update(session);
+
+            var sessionAfterUpdate = context.Sessions.Query().FirstOrDefault();
+
+            Assert.AreEqual(4, session.Criteria.Count);
+        }
     }
 }

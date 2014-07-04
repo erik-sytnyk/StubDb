@@ -173,6 +173,11 @@ namespace StubDb
                 if (isExistingEntity)
                 {
                     this.Storage.Connections.RemoveConnectionsFor(entityType, connectedType, connection.ConnectionName, entityId);
+
+                    foreach (var derivedType in connectedType.DerivedTypes)
+                    {
+                        this.Storage.Connections.RemoveConnectionsFor(entityType, derivedType, connection.ConnectionName, entityId);
+                    }
                 }
 
                 if (connectedEntities.Any())
