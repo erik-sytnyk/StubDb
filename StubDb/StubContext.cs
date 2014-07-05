@@ -321,6 +321,11 @@ namespace StubDb
             }
         }
 
+        public void ClearSnapshot()
+        {
+            this.Snapshot = null;
+        }
+
         public bool IsEmpty
         {
             get { return this.Storage.IsEmpty; }
