@@ -13,22 +13,6 @@ namespace StubDb.Persistence
 {
     public class SerializeToFilePersistenceProvider : IContextStoragePersistenceProvider
     {
-        private const string DefaultDbFileName = @"StubDb.data";
-        private const int NumberOfTries = 60;
-        private const int TimeIntervalBetweenTries = 1000;
-
-        private string DbFilePath { get; set; }
-
-        public SerializeToFilePersistenceProvider()
-            : this(DefaultDbFileName)
-        {
-        }
-
-        public SerializeToFilePersistenceProvider(string dbFilePath)
-        {
-            DbFilePath = dbFilePath;
-        }
-
         #region Nested Classes
 
         public class DataContainer
@@ -182,7 +166,20 @@ namespace StubDb.Persistence
             {
                 if (type.IsEnum)
                 {
-                    return Enum.Parse(type, value);                    
+                    return Enum.Parse(type, value);
+                }
+
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof (Nullable<>))
+                {
+                    if (String.IsNullOrEmpty(value))
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        var nullableType = type.GetGenericArguments()[0];
+                        return Convert.ChangeType(value, nullableType);                        
+                    }
                 }
 
                 return Convert.ChangeType(value, type);
@@ -227,6 +224,22 @@ namespace StubDb.Persistence
 
         #endregion
 
+        private const string DefaultDbFileName = @"StubDb.data";
+        private const int NumberOfTries = 60;
+        private const int TimeIntervalBetweenTries = 1000;
+
+        private string DbFilePath { get; set; }
+
+        public SerializeToFilePersistenceProvider()
+            : this(DefaultDbFileName)
+        {
+        }
+
+        public SerializeToFilePersistenceProvider(string dbFilePath)
+        {
+            DbFilePath = dbFilePath;
+        }
+
         public void SaveContext(ContextStorage storage, EntityTypeCollection types)
         {
             var data = new DataContainer(storage, types);
@@ -235,7 +248,7 @@ namespace StubDb.Persistence
 
             try
             {
-                using (var writer = new StreamWriter(DefaultDbFileName, false))
+                using (var writer = new StreamWriter(DbFilePath, false))
                 {
                     writer.WriteLine(json);
                 }
