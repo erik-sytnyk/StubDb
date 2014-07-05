@@ -116,9 +116,9 @@ namespace StubDb.ModelStorage
         }
     }
 
-    public class ConnectionsCollection
+    public class ConnectionsCollection: ICloneable
     {
-        private Dictionary<string, ConnectionData> _storage = new Dictionary<string, ConnectionData>();
+        internal Dictionary<string, ConnectionData> _storage = new Dictionary<string, ConnectionData>();
 
         public void AddConnection(EntityTypeInfo typeFirst, EntityTypeInfo typeSecond, string connectionName, int idFirst, int idSecond, bool checkForExistingConnections)
         {
@@ -213,6 +213,22 @@ namespace StubDb.ModelStorage
         public List<ConnectionData> GetAllConnectionsData()
         {
             return this._storage.Values.ToList();
+        }
+
+        public object Clone()
+        {
+            var result = new ConnectionsCollection();
+
+            foreach (var storageEntry in _storage)
+            {
+                var connectionDataClone = new ConnectionData(storageEntry.Value.TypeFirst, storageEntry.Value.TypeSecond, storageEntry.Value.ConnectionName);
+                
+                connectionDataClone.AddRange(storageEntry.Value);
+
+                result._storage.Add(storageEntry.Key, connectionDataClone);
+            }
+
+            return result;
         }
     }
 }

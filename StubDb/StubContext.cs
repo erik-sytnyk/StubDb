@@ -13,7 +13,7 @@ using StubDb.Persistence;
 
 namespace StubDb
 {
-    public class StubContext
+    public abstract class StubContext
     {
         #region Nested Classes
 
@@ -23,13 +23,14 @@ namespace StubDb
 
         internal ContextStorage Storage = new ContextStorage();
         internal List<RequiredDependancy> RequiredDependancies { get; set; }
+        internal ContextStorage Snapshot;
         protected ModelBuilder ModelBuilder { get; set; }
         public IContextStoragePersistenceProvider PersistenceProvider { get; set; }
         public EntityTypeCollection Types { get; set; }
 
         internal bool DoDataConsistencyTest = true;
 
-        public StubContext()
+        protected StubContext()
         {
             Types = new EntityTypeCollection();
             RequiredDependancies = new List<RequiredDependancy>();
@@ -74,17 +75,25 @@ namespace StubDb
 
         public void Add(object entity)
         {
+            this.BeforeDataChanged();
+
             var entityType = this.GetEntityType(entity.GetType());
 
             //set default id value to mark entity as new
             entityType.SetEntityId(entity, 0);
 
             this.Save(entity);
+
+            this.AfterDataChanged();
         }
 
         public void Update(object entity)
         {
+            this.BeforeDataChanged();
+
             this.Save(entity);
+
+            this.AfterDataChanged();
         }
 
         private void Save(object entity)
@@ -211,11 +220,15 @@ namespace StubDb
 
         public void Remove(object entity)
         {
+            this.BeforeDataChanged();
+
             var entityType = this.GetEntityType(entity.GetType());
 
             var entityId = entityType.GetEntityId(entity);
 
             this.Remove(entityType.Type, entityId);
+
+            this.AfterDataChanged();
         }
 
         internal void Remove(Type type, int id)
@@ -295,6 +308,19 @@ namespace StubDb
             }
         }
 
+        public void CreateSnapshot()
+        {
+            this.Snapshot = (ContextStorage)this.Storage.Clone();
+        }
+
+        public void RestoreFromSnapshot()
+        {
+            if (this.Snapshot != null)
+            {
+                this.Storage = this.Snapshot;
+            }
+        }
+
         public bool IsEmpty
         {
             get { return this.Storage.IsEmpty; }
@@ -360,6 +386,16 @@ namespace StubDb
                 type.Value.DerivedTypes = derivedTypes;
                 type.Value.BaseEntityType = baseTypes.FirstOrDefault();
             }
+        }
+
+        public virtual void BeforeDataChanged()
+        {
+
+        }
+
+        public virtual void AfterDataChanged()
+        {
+
         }
 
         #region Helper functions

@@ -1,6 +1,11 @@
-﻿namespace StubDb.ModelStorage
+﻿using System;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using Ext.Core.Reflection;
+
+namespace StubDb.ModelStorage
 {
-    public class ContextStorage
+    public class ContextStorage: ICloneable
     {
         private EntityCollection _entities = new EntityCollection();
         private ConnectionsCollection _connections = new ConnectionsCollection();
@@ -26,6 +31,16 @@
         {
             _entities.Clear();
             _connections.Clear();
+        }
+
+        public object Clone()
+        {
+            var result = new ContextStorage();
+
+            result.Entities = (EntityCollection)this.Entities.Clone();
+            result.Connections = (ConnectionsCollection)this.Connections.Clone();
+
+            return result;
         }
     }
 }
