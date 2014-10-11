@@ -21,14 +21,14 @@ namespace StubDb
 
         #endregion
 
-        internal ContextStorage Storage = new ContextStorage();
         internal List<RequiredDependancy> RequiredDependancies { get; set; }
         internal ContextStorage Snapshot;
         protected ModelBuilder ModelBuilder { get; set; }
-        public IContextStoragePersistenceProvider PersistenceProvider { get; set; }
+        public ContextStorage Storage = new ContextStorage();
         public EntityTypeCollection Types { get; set; }
+        public IContextStoragePersistenceProvider PersistenceProvider { get; set; }
 
-        internal bool DoDataConsistencyTest = true;
+        public bool DoDataConsistencyTest = true;
 
         protected StubContext()
         {
@@ -290,7 +290,8 @@ namespace StubDb
         public void SaveData()
         {
             Check.NotNull(this.PersistenceProvider, "Persistence provider is not initialized");
-            PersistenceProvider.SaveContext(Storage, Types);
+
+            PersistenceProvider.SaveContext(this);
         }
 
         public void LoadData()
@@ -298,7 +299,7 @@ namespace StubDb
             try
             {
                 Check.NotNull(this.PersistenceProvider, "Persistence provider is not initialized");
-                PersistenceProvider.LoadContext(this.Storage, Types);
+                PersistenceProvider.LoadContext(this);
                 this.CheckDataConsistency();
             }
             catch (Exception ex)

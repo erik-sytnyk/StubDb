@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MSTestExtensions;
 using StubDb;
-using StubDb.Persistence;
+using StubDb.Store;
 
 namespace StabDbTests
 {
@@ -93,6 +95,21 @@ namespace StabDbTests
 
         [TestMethod]
         public void should_save_and_load_context()
+        {
+            var context = InitializeTestContext(new TestStubContext());
+
+            context.PersistenceProvider = new SerializeToFilePersistenceProvider();
+
+            context.SaveData();
+
+            context.LoadData();
+
+            Assert.AreEqual(context.Instructors.Query().Count(), 3);
+        }
+
+        [Ignore]
+        [TestMethod]
+        public void should_save_and_load_big_contexts()
         {
             var context = InitializeTestContext(new TestStubContext());
 
@@ -241,6 +258,26 @@ namespace StabDbTests
             var literatureAfterUpdate = context.Courses.Query().Single(x => x.Name == "Literature");
 
             Assert.IsNull(literatureAfterUpdate.Location);
+        }
+
+        [TestMethod]
+        public void should_not_add_child_entities_with_the_same_id()
+        {
+            var context = new TestStubContext();
+
+            var algebra = new Course() {Name = "Algebra"};
+            var geometry = new Course() {Name = "Geometry"};
+
+            context.Add(algebra);
+            context.Add(geometry);
+
+            var john = new Instructor() {FirstName = "John", Surname = "Smith"};
+            john.Courses = new List<Course>();
+            john.Courses.Add(algebra);
+            john.Courses.Add(algebra);
+            john.Courses.Add(geometry);
+
+            ExceptionAssert.Throws(() => context.Add(john));
         }
 
         private TestStubContext InitializeTestContext(TestStubContext context)

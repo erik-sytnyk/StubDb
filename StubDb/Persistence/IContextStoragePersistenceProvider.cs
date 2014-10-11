@@ -6,7 +6,7 @@ namespace StubDb.Persistence
 {
     public interface IContextStoragePersistenceProvider
     {
-        void SaveContext(ContextStorage storage, EntityTypeCollection types);
-        void LoadContext(ContextStorage storage, EntityTypeCollection types);
+        void SaveContext(StubContext context);
+        void LoadContext(StubContext context);
     }
 }

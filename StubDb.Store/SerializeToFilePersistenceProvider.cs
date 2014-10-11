@@ -8,8 +8,9 @@ using System.Text;
 using Ext.Core;
 using Newtonsoft.Json;
 using StubDb.ModelStorage;
+using StubDb.Persistence;
 
-namespace StubDb.Persistence
+namespace StubDb.Store
 {
     public class SerializeToFilePersistenceProvider : IContextStoragePersistenceProvider
     {
@@ -240,9 +241,9 @@ namespace StubDb.Persistence
             DbFilePath = dbFilePath;
         }
 
-        public void SaveContext(ContextStorage storage, EntityTypeCollection types)
+        public void SaveContext(StubContext context)
         {
-            var data = new DataContainer(storage, types);
+            var data = new DataContainer(context.Storage, context.Types);
 
             string json = JsonConvert.SerializeObject(data);
 
@@ -259,7 +260,7 @@ namespace StubDb.Persistence
             }
         }
 
-        public void LoadContext(ContextStorage storage, EntityTypeCollection types)
+        public void LoadContext(StubContext context)
         {
             if (!File.Exists(DbFilePath)) return;
 
@@ -276,7 +277,7 @@ namespace StubDb.Persistence
                     {
                         string json = reader.ReadToEnd();
                         var dataContainer = JsonConvert.DeserializeObject<DataContainer>(json);
-                        dataContainer.LoadContextStorage(storage, types);
+                        dataContainer.LoadContextStorage(context.Storage, context.Types);
                     }
                     successfulExecution = true;
                 }
