@@ -16,7 +16,7 @@ namespace StubDb.Store
         private const int NumberOfTries = 60;
         private const string EntitiesLine = "Entities:";
         private const string ConnectionsLine = "Connections:";
-        private const string CommaSeparator = ",";
+        private const string PropertySeparator = "ߊ";
         private const string DashSeparator = "-";
 
         private string _dbFilePath = String.Empty;
@@ -61,7 +61,7 @@ namespace StubDb.Store
 
                 foreach (var entity in entities)
                 {
-                    var valuesStr = String.Join(CommaSeparator, simpleProperties.Select(x => x.GetValue(entity)));
+                    var valuesStr = String.Join(PropertySeparator, simpleProperties.Select(x => x.GetValue(entity)));
 
                     writer.WriteLine(valuesStr);
                 }
@@ -149,7 +149,7 @@ namespace StubDb.Store
                     var entity = EntityTypeManager.CreateNew(type.Type);
                     var entityId = -1;
 
-                    var values = line.Split(new string[] { CommaSeparator }, StringSplitOptions.None);
+                    var values = line.Split(new string[] { PropertySeparator }, StringSplitOptions.None);
 
                     for (int i = 0; i < properties.Count; i++)
                     {
@@ -216,25 +216,33 @@ namespace StubDb.Store
 
         private object ConvertToSimpleType(Type type, string value)
         {
-            if (type.IsEnum)
+            try
             {
-                return Enum.Parse(type, value);
-            }
+                if (type.IsEnum)
+                {
+                    return Enum.Parse(type, value);
+                }
 
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    if (String.IsNullOrEmpty(value))
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        var nullableType = type.GetGenericArguments()[0];
+                        return Convert.ChangeType(value, nullableType);
+                    }
+                }
+
+                return Convert.ChangeType(value, type);
+            }
+            catch (Exception ex)
             {
-                if (String.IsNullOrEmpty(value))
-                {
-                    return null;
-                }
-                else
-                {
-                    var nullableType = type.GetGenericArguments()[0];
-                    return Convert.ChangeType(value, nullableType);
-                }
+                
+                throw ex;
             }
-
-            return Convert.ChangeType(value, type);
         }
 
     }
