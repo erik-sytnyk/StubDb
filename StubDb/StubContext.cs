@@ -305,7 +305,7 @@ namespace StubDb
             catch (Exception ex)
             {
                 this.Storage.Clear();
-                throw;
+                throw ex;
             }
         }
 

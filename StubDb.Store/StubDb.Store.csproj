@@ -47,8 +47,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FlatFilePersistenceProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SerializeToFilePersistenceProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\StubDb\StubDb.csproj">

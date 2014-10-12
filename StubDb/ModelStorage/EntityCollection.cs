@@ -61,11 +61,16 @@ namespace StubDb.ModelStorage
 
         public List<object> GetEntities(EntityTypeInfo entityType)
         {
+            return GetEntities(entityType, true);
+        }
+
+        public List<object> GetEntities(EntityTypeInfo entityType, bool clone)
+        {
             var result = new List<object>();
 
             if (_storage.ContainsKey(entityType.Type))
             {
-                result = _storage[entityType.Type].Values.Select(EntityTypeManager.CloneObject).ToList();
+                result = _storage[entityType.Type].Values.Select(x => clone ? EntityTypeManager.CloneObject(x) : x).ToList();
             }
 
             return result;

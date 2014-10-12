@@ -49,7 +49,7 @@ namespace StabDbTests
         [TestMethod]
         public void should_save_and_load_context()
         {
-            var context = new TestStubContext {PersistenceProvider = new SerializeToFilePersistenceProvider()};
+            var context = new TestStubContext {PersistenceProvider = new FlatFilePersistenceProvider()};
 
             var parentA = new Parent() {Text = "First"};
             parentA.Children.Add(new Child(){Text = "First child", Date = new DateTime(1984, 8, 4)});
@@ -82,9 +82,8 @@ namespace StabDbTests
         [TestMethod]
         public void should_save_and_load_big_contexts()
         {
-            var context = new TestStubContext { PersistenceProvider = new SerializeToFilePersistenceProvider() };
-
-            context.PersistenceProvider = new SerializeToFilePersistenceProvider();
+            var context = new TestStubContext { PersistenceProvider = new FlatFilePersistenceProvider() };
+            context.DoDataConsistencyTest = false;
 
             var parentsNumber = 50000;
 

@@ -98,7 +98,7 @@ namespace StabDbTests
         {
             var context = InitializeTestContext(new TestStubContext());
 
-            context.PersistenceProvider = new SerializeToFilePersistenceProvider();
+            context.PersistenceProvider = new FlatFilePersistenceProvider();
 
             context.SaveData();
 
@@ -113,7 +113,7 @@ namespace StabDbTests
         {
             var context = InitializeTestContext(new TestStubContext());
 
-            context.PersistenceProvider = new SerializeToFilePersistenceProvider();
+            context.PersistenceProvider = new FlatFilePersistenceProvider();
 
             context.SaveData();
 
