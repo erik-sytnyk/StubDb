@@ -41,9 +41,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Ext.Core.0.2.17\lib\net45\Ext.Core.dll</HintPath>
     </Reference>
-    <Reference Include="MSTestExtensions">
-      <HintPath>..\packages\MSTestExtensions.3.0.0\lib\net40\MSTestExtensions.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -64,6 +61,7 @@
     <Compile Include="EntityTypeManagerTest.cs" />
     <Compile Include="FlatFileStorageTest.cs" />
     <Compile Include="IgnoreTest.cs" />
+    <Compile Include="Infrastructure\ExceptionAssert.cs" />
     <Compile Include="InheritanceTest.cs" />
     <Compile Include="PerformanceTest.cs" />
     <Compile Include="ObjectCloningTest.cs" />

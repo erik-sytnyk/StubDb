@@ -101,7 +101,6 @@ namespace StabDbTests
             var saveTime = base.MeasureOperationTime(() =>
             {
                 context.SaveData();
-                context.Storage.Clear();
                 context.LoadData();
             });            
            

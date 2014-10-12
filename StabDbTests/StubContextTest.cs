@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MSTestExtensions;
+using StabDbTests.Infrastructure;
 using StubDb;
 using StubDb.Store;
 
