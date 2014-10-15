@@ -37,9 +37,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Ext.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Ext.Core.0.2.17\lib\net45\Ext.Core.dll</HintPath>
+    <Reference Include="Ext.Core">
+      <HintPath>..\packages\Ext.Core.0.2.19\lib\net45\Ext.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -89,6 +88,9 @@
       <Project>{23C4CB02-B413-40FE-AD94-C3E3B248FC64}</Project>
       <Name>StubDb</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

@@ -34,7 +34,7 @@
   <ItemGroup>
     <Reference Include="Ext.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Ext.Core.0.2.17\lib\net45\Ext.Core.dll</HintPath>
+      <HintPath>..\packages\Ext.Core.0.2.19\lib\net45\Ext.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
