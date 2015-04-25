@@ -26,7 +26,7 @@ namespace StubDb
 
         public static IEnumerable<PropertyInfo> GetSimpleWritableProperties(Type type)
         {
-            return GetProperties(type).Where(p => IsSimpleOrSimpleEnumerableType(p.PropertyType) && p.SetMethod != null);
+            return GetProperties(type).Where(p => IsSimpleOrSimpleEnumerableType(p.PropertyType) && p.GetSetMethod() != null);
         }
 
         public static bool UseFullTypeNameAsId { get; set; }

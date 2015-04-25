@@ -55,7 +55,7 @@ namespace StabDbTests
 
             Assert.IsNotNull(idProp);
 
-            var id = idProp.GetValue(student);
+            var id = idProp.GetValue(student, null);
             
             Assert.AreEqual(id, 5);
         }

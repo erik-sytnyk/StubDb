@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Ext.Core;
 using Ext.Core.Collections;
+using StubDb.InternalHelpers;
 using StubDb.ModelStorage;
 using StubDb.Persistence;
 
@@ -63,7 +64,7 @@ namespace StubDb
         {
             var result = (StubSet<TEntity>)null;
 
-            var property = this.GetStubSetProperties().SingleOrDefault(x => x.PropertyType.GenericTypeArguments.First() == typeof(TEntity));
+            var property = this.GetStubSetProperties().SingleOrDefault(x => x.PropertyType.GetGenericTypeArguments().First() == typeof(TEntity));
 
             if (property != null)
             {
