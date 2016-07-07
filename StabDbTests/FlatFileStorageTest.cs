@@ -78,6 +78,30 @@ namespace StabDbTests
             Assert.AreEqual(parentBFromContext.Children.Count, 1);
         }
 
+        [TestMethod]
+        public void should_handle_muli_line_values()
+        {
+            var context = new TestStubContext { PersistenceProvider = new FlatFilePersistenceProvider() };
+
+            var builder = new StringBuilder();
+            builder.AppendLine("Line 1");
+            builder.AppendLine("Line 2");
+            var multiLineValue = builder.ToString();
+
+            var entity = new Parent() { Text = multiLineValue };          
+
+            context.Parents.Add(entity);
+
+            context.SaveData();
+
+            context.LoadData();
+
+            var parent = context.Parents.Query().FirstOrDefault();
+
+            Assert.IsNotNull(parent);
+            Assert.AreEqual(parent.Text, multiLineValue);
+        }
+
         [Ignore]
         [TestMethod]
         public void should_save_and_load_big_contexts()

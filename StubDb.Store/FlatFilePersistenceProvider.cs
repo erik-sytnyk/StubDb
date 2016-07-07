@@ -18,6 +18,7 @@ namespace StubDb.Store
         private const string EntitiesLine = "Entities:";
         private const string ConnectionsLine = "Connections:";
         private const string PropertySeparator = "ߊ";
+        private const string NewLineSeparator = "ᐅ";
         private const string DashSeparator = "-";
 
         private string _dbFilePath = String.Empty;
@@ -62,7 +63,14 @@ namespace StubDb.Store
 
                 foreach (var entity in entities)
                 {
-                    var valuesStr = String.Join(PropertySeparator, simpleProperties.Select(x => x.GetValue(entity)));
+                    var values = simpleProperties.Select(x =>
+                    {
+                        var value = x.GetValue(entity).ToString();
+
+                        return value.Replace(System.Environment.NewLine, NewLineSeparator);
+                    });
+
+                    var valuesStr = String.Join(PropertySeparator, values);
 
                     writer.WriteLine(valuesStr);
                 }
@@ -120,7 +128,7 @@ namespace StubDb.Store
                     }
                     else
                     {
-                        throw new Exception(String.Format("Error saving context to file {0}", filePath), ex);   
+                        throw new Exception(String.Format("Error loading context to file {0}", filePath), ex);   
                     }
                 }
             }
@@ -150,7 +158,8 @@ namespace StubDb.Store
                     var entity = EntityTypeManager.CreateNew(type.Type);
                     var entityId = -1;
 
-                    var values = line.Split(new string[] { PropertySeparator }, StringSplitOptions.None);
+                    var values = line.Split(new string[] { PropertySeparator }, StringSplitOptions.None)
+                        .Select(x => x.Replace(NewLineSeparator, Environment.NewLine)).ToList();
 
                     for (int i = 0; i < properties.Count; i++)
                     {
